@@ -1,0 +1,1 @@
+id:ID(pr_gene_id)	pr_gene_symbol:string	pr_gene_title:string	pr_is_lm:int	pr_is_bing:int	target_id:string	fam:string	tdl:string	idg2:string	family:string	uniprot:string	chr:string	description:string	dtoid:int	source:string

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+function prettyprinttime() {
+  local h=$(($1/3600))
+  local m=$((($1/60)%60))
+  local s=$(($1%60))
+  printf "%02dh:%02dm:%02ds\n" $h $m $s
+}
+
+if [ -z $DBEXT ]
+   then
+     echo "defaulting to mysql" 
+     DBEXT="mysql"
+fi
+
+DATABASE_DIR="$HOME/db/${DATABASE}/"
+
+mkdir -p ${DATABASE_DIR}
+
+DOWNLOADS_DIR="$HOME/d/downloads"
+DATASET_DIR="${DOWNLOADS_DIR}/${DATABASE}.${DBEXT}/"
+PROVENANCE_DIR="$HOME/provenance/"
+COMMON_DIR="${DOWNLOADS_DIR}/common.sql/"
+
+echo "DOCKER_IMAGE=${DOCKER_IMAGE}"
+echo "STORAGE=${STORAGE}"
+echo "DBEXT=${DBEXT}"
+echo "DATABASE=${DATABASE}"
+echo "DATABASE_DIR=${DATABASE_DIR}"
+echo "DOWNLOADS_DIR=${DOWNLOADS_DIR}"
+echo "DATASET_DIR=${DATASET_DIR}"
+echo "PROVENANCE_DIR=${PROVENANCE_DIR}"
+echo "DATALOAD_SCRIPT=${DATALOAD_SCRIPT}"
+
