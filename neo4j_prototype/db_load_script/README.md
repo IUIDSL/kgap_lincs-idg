@@ -10,5 +10,5 @@ DATABASE_DIR="/data2/db/${DATABASE}/"
 ```
 
 Notes:
-- The database may required up to 30% extra space on disk, during the load phase, once loaded total size is a bit over 1TB
+- The database may required up to 30% extra space on disk, during the load phase, once loaded total size is a bit over 1TB.  (the database, this does not include the size of the dump file being loaded)
 - The database took 39 hours to load onto a pair of RAID0 spinning disks, (and not CPU limited)
