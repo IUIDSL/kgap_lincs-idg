@@ -55,7 +55,7 @@ docker run --name ${DATABASE} \
 # I don't see an easy way to override this, atm
 ./show_databases_postgres ${DATABASE} public 
 
-SECONDS=0
+#SECONDS=0
 
 # increase max_wal_size (default 1GB) 
 docker exec -it ${DATABASE} bash -c "echo \"alter system set max_wal_size='10GB'; \" | psql --username=postgres -d ${DATABASE}"
