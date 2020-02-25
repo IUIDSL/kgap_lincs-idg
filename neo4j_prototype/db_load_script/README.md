@@ -1,4 +1,4 @@
-WARNING:  DO NOT RUN THIS SCRIPT "AS IS", YOU MUST MAKE CHANGES.
+WARNING:  You must set up directories, and make changes to the script before running.
 
 This directory contains the script that was used to spin up the LINCS1000 postgres database in docker
 you'll need to examine the scripts and make all required adjustments for your local configuration, directories and disks
