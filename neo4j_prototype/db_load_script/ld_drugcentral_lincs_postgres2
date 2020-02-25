@@ -30,13 +30,14 @@ docker pull ${DOCKER_IMAGE}
 #
 #  --health-cmd="pg_isready -U postgres -d ${DATABASE} || exit 1" \
 #
+#  --volume ${PROVENANCE_DIR}:/provenance 
+#  --volume ${COMMON_DIR}:/common 
+#
 docker run --name ${DATABASE} \
   --detach \
   --restart unless-stopped \
   --user $(id -u):$(id -g) \
   --volume $DATASET_DIR:/dataset \
-  --volume ${PROVENANCE_DIR}:/provenance \
-  --volume ${COMMON_DIR}:/common \
   --mount type=bind,src=${DATABASE_DIR},dst=/var/lib/postgresql/data \
   --env POSTGRES_PASSWORD=trontron \
   --env POSTGRES_USER=postgres \
@@ -67,10 +68,10 @@ docker restart ${DATABASE}
 echo "Bulk load database" 
 docker exec -it ${DATABASE} bash -c "pg_restore --verbose --no-privileges --jobs=4 --username=postgres --dbname=${DATABASE} --no-owner /dataset/${DATALOAD_SCRIPT}"
 
-echo "$SECONDS ${DATABASE} load elapsed time: $(prettyprinttime $SECONDS)" > ${PROVENANCE_DIR}loadtime-${DBNAME}.txt
-cat ${PROVENANCE_DIR}loadtime-${DBNAME}.txt
+#echo "$SECONDS ${DATABASE} load elapsed time: $(prettyprinttime $SECONDS)" > ${PROVENANCE_DIR}loadtime-${DBNAME}.txt
+#cat ${PROVENANCE_DIR}loadtime-${DBNAME}.txt
 
-echo "query and then list table content summary"
-./listtables_postgres ${DATABASE} ${DBNAME}
-./show_databases_postgres ${DATABASE} public 
+#echo "query and then list table content summary"
+#./listtables_postgres ${DATABASE} ${DBNAME}
+#./show_databases_postgres ${DATABASE} public 
 
