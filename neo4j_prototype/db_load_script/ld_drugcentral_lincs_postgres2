@@ -13,9 +13,9 @@ source utilityfunctions
 DATASET_DIR="/home/plastic/d/downloads/drugcentral_lincs.postgres2"
 DATABASE_DIR="/data2/db/${DATABASE}/"
 
-./reset_db ${DATABASE}
-rm -r ${DATABASE_DIR}
-mkdir -p ${DATABASE_DIR}
+#./reset_db ${DATABASE}
+#rm -r ${DATABASE_DIR}
+#mkdir -p ${DATABASE_DIR}
 
 # download postgres server docker image
 # not strictly necessary but ensures local image is up to date
