@@ -4,6 +4,7 @@ This directory contains the script that was used to spin up the LINCS1000 postgr
 you'll need to examine the scripts and make all required adjustments for your local configuration, directories and disks
 
 Examples (not all inclusive):
+
 DATASET_DIR="/home/plastic/d/downloads/drugcentral_lincs.postgres2"
 DATABASE_DIR="/data2/db/${DATABASE}/"
 
