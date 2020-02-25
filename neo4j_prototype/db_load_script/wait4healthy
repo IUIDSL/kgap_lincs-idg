@@ -1,0 +1,24 @@
+#!/bin/bash
+
+DATABASE=$1
+if [ -z "$DATABASE" ]
+   then
+      echo "usage:"
+      echo "  $0 DATABASE"
+      exit
+fi
+
+function getContainerHealth {
+  docker inspect --format "{{json .State.Health.Status }}" ${DATABASE}
+}
+
+while STATUS=$(getContainerHealth ${DATABASE}); [ ! -z $STATUS ] && [ $STATUS != "\"healthy\"" ]; do 
+  if [ $STATUS == "\"unhealthy\"" ]; then
+    echo "Failed!"
+    exit -1
+  fi
+  printf .
+  lf=$'\n'
+  sleep 1
+done
+printf "$lf"
