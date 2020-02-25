@@ -1,2 +1,0 @@
-scp joel@hoffmann.data2discovery.net:/home/joel/neo4j/neo.lincs_lymphoma/data/dbms/auth .
-scp joel@hoffmann.data2discovery.net:/home/joel/neo4j/neo.lincs_lymphoma/data/dbms/roles .

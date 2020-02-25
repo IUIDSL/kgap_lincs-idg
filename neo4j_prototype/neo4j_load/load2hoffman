@@ -1,6 +1,0 @@
-./getlatestauthroles
-
-rsync . joel@hoffmann.data2discovery.net:~/lincs2020_lymphoma/ --stats -rptv --exclude='@Recently-Snapshot' --exclude='.' --exclude='.DS_Store' --progress --delete 
-
-ssh joel@hoffmann.data2discovery.net "bash --login -c 'cd /home/joel/lincs2020_lymphoma && /home/joel/lincs2020_lymphoma/ld_ag'"
-
