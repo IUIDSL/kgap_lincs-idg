@@ -1,0 +1,1 @@
+:START_ID(pr_gene_id)	:END_ID(sig_id)	zscore:float	source:string

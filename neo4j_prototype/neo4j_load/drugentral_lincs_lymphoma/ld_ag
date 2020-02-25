@@ -1,0 +1,243 @@
+#!/bin/bash
+#
+# Script for loading Analysis Graph
+# ground up script, replaces the existing docker (by name)
+#
+
+# this script requires environment variables set in advance
+#
+# e.g.
+# NEO4J_USERNAME=
+# NEO4J_PASSWORD= 
+# $HOME == /home/joel
+echo "NEO4J_USERNAME: ${NEO4J_USERNAME}"
+echo "NEO4J_PASSWORD: ${NEO4J_PASSWORD}"
+echo "HOME: ${HOME}"
+#
+SECONDS=0
+#read -p "WARNING: Did you copy the latest auth and roles files (for THIS instance)?  - Press [Enter] (or ctrl C to exit)"
+
+
+# configure build
+#
+CONTAINER="neo.lincs_lymphoma"
+DOCKER_IMAGE="neo4j:3.5.14-enterprise"
+NEO_PLUGINS='["apoc", "graph-algorithms"]'
+EPHEMERALCONTAINER="ephemeral-${CONTAINER}"
+
+NEO_DATA_PATH="."
+NEO_GRAPH_DIR="$HOME/neo4j/${CONTAINER}"
+NEO_DATA_SRC="${NEO_DATA_PATH}/"
+
+#NEO_WHITELIST="d2dneo4j.s3.amazonaws.com,guides.neo4j.com"
+#NEO_PLAY="play https://d2dneo4j.s3.amazonaws.com/Neo4jBrowserHelp.html" 
+
+NEO_WHITELIST="guides.neo4j.com"
+NEO_HTTPS=7483 # 7473-Parkinson 7475-OpenPhacts 7477-Testing, 7479 lincs_lm, 7481 lincs_all, 7483 lincs_lymphoma
+NEO_HTTP=7484  # 7474-Parkinson 7476-OpenPhacts 7478-Testing, 7480 lincs_lm, 7482 lincs_all, 7484 lincs_lymphoma
+NEO_BOLT=7697  # 7687-Parkinson 7689-OpenPhacts 7691-Testing, 7693 lincs_lm, 7695 lincs_all, 7697 lincs_lympohoma
+
+if [[ ${RUNNING_SCRIPT_AT_HOME} = "true" ]] ;
+then
+  NEO_HOST=192.168.0.230
+  HEAP_SIZE="6G"
+  PAGECACHE_SIZE="12G"
+else
+  NEO_HOST=hoffmann.data2discovery.net
+  HEAP_SIZE="10G"
+  PAGECACHE_SIZE="32G"
+fi
+echo "NEO_HOST=${NEO_HOST}"
+echo "HEAP_SIZE=${HEAP_SIZE}"
+echo "PAGECACHE_SIZE=${PAGECACHE_SIZE}"
+
+# utility function
+function prettyprinttime() {
+  local h=$(($1/3600))
+  local m=$((($1/60)%60))
+  local s=$(($1%60))
+  printf "%02dh:%02dm:%02ds\n" $h $m $s
+}
+
+#---------------------------------------------------------------
+#
+# shutdown old db, and remove it
+#
+#---------------------------------------------------------------
+
+docker stop "${CONTAINER}"
+docker rm "${CONTAINER}"
+
+# cleanup old data
+rm -R "${NEO_GRAPH_DIR}/data"
+rm -R "${NEO_GRAPH_DIR}/import" 
+rm -R "${NEO_GRAPH_DIR}/plugins"
+rm -R "${NEO_GRAPH_DIR}/conf"
+rm -R "${NEO_GRAPH_DIR}/logs"
+
+echo "create directory structure required"
+mkdir -p -m 700  "${NEO_GRAPH_DIR}/data"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/data/dbms"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/import/v"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/import/e"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/plugins"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/conf"
+mkdir -p -m 700 "${NEO_GRAPH_DIR}/logs"
+
+echo "copy in auth and roles files"
+cp "${NEO_DATA_PATH}/auth" "${NEO_GRAPH_DIR}/data/dbms" 
+cp "${NEO_DATA_PATH}/roles" "${NEO_GRAPH_DIR}/data/dbms" 
+
+echo "copy data files to import directory"
+cp -pr "${NEO_DATA_SRC}"/* "${NEO_GRAPH_DIR}/import/"
+
+echo "copy in post-load cypher scripts"
+cp "${NEO_DATA_PATH}/"*.cypher "${NEO_GRAPH_DIR}/import/"
+
+# run a bare bones ephemeral neo4j in a docker container
+# this is required to use neo4j-admin on our new database
+# because neo4j-admin import can not be used on a running neo4j
+#
+echo "stop/rm ${EPHEMERALCONTAINER} (if running)"
+docker stop ${EPHEMERALCONTAINER}
+docker rm ${EPHEMERALCONTAINER}
+
+echo "start ${EPHEMERALCONTAINER} neo4j"
+docker run \
+  --user "$(id -u):$(id -g)" \
+  --name "${EPHEMERALCONTAINER}" \
+  --detach \
+  --env NEO4J_AUTH="neo4j/trontron21" \
+  --env NEO4J_USERNAME=${NEO4J_USERNAME} \
+  --env NEO4J_PASSWORD=${NEO4J_PASSWORD} \
+  --env NEO4J_dbms_connector_bolt_address=0.0.0.0:${NEO_BOLT} \
+  --env NEO4J_dbms_connector_http_address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_http_listen__address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:${NEO_BOLT} \
+  --publish ${NEO_BOLT}:${NEO_BOLT} \
+  --volume ${NEO_GRAPH_DIR}/data:/data \
+  --volume ${NEO_GRAPH_DIR}/import:/import \
+  --volume ${NEO_GRAPH_DIR}/plugins:/plugins \
+  --volume ${NEO_GRAPH_DIR}/conf:/var/lib/neo4j/conf \
+  --volume ${NEO_GRAPH_DIR}/logs:/logs \
+  --env NEO4J_dbms_memory_heap_initial__size=${HEAP_SIZE} \
+  --env NEO4J_dbms_memory_heap_max__size=${HEAP_SIZE} \
+  --env NEO4J_dbms_memory_pagecache_size=${PAGECACHE_SIZE} \
+  --env NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+   ${DOCKER_IMAGE} 
+
+# wait for ephemeral neo4j to go fully online before proceeding
+# note: ephemeral is always on the default port
+./wait4bolt_outside ${EPHEMERALCONTAINER} ${NEO_BOLT} 
+ET_SETUP=$SECONDS
+
+echo "Bulk load all tsv files"
+SECONDS=0
+# launch neo4j-admin inside container to load data into neo
+# ignore duplicate nodes makes me nervous, this should never occur 
+#  --ignore-duplicate-nodes 
+#  --nodes:Perturbagen="/import/v/perturbagen.properties.drugcentral_lincs.hdr.tsv,/import/v/perturbagen.properties.drugcentral_lincs.tsv.gz" 
+# 
+docker exec -t \
+   ${EPHEMERALCONTAINER} bin/neo4j-admin import \
+  --mode=csv \
+  --database="${CONTAINER}" \
+  --ignore-missing-nodes \
+  --delimiter "\t" \
+  --high-io=true \
+  --report-file=importreport.txt \
+  --nodes:Cell="/import/v/cell.properties.drugcentral_lincs.hdr.tsv,/import/v/cell.properties.drugcentral_lincs.tsv.gz" \
+  --nodes:Gene="/import/v/gene.properties.drugcentral_lincs.hdr.tsv,/import/v/gene.properties.drugcentral_lincs.tsv.gz" \
+  --nodes:Signature="/import/v/signature.properties.drugcentral_lincs.hdr.tsv,/import/v/signature.properties.drugcentral_lincs.tsv.gz" \
+  --nodes:Drug="/import/v/drug.properties.drugcentral_lincs.hdr.tsv,/import/v/drug.properties.drugcentral_lincs.tsv.gz" \
+  --relationships:CELL_SIGNATURE="/import/e/cell.signature.cellsignature.drugcentral_lincs.hdr.tsv,/import/e/cell.signature.cellsignature.drugcentral_lincs.tsv.gz" \
+  --relationships:DRUG_SIGNATURE="/import/e/drug.signature.drugsignature.drugcentral_lincs.hdr.tsv,/import/e/drug.signature.drugsignature.drugcentral_lincs.tsv.gz" \
+  --relationships:SIGNATURE_GENE="/import/e/signature.gene.signaturegene.drugcentral_lincs.hdr.tsv,/import/e/signature.gene.signaturegene.drugcentral_lincs.tsv.gz"
+
+# ****
+# make sure you leave at least one blank line at the top of this file (ld_kg_part3)
+# the automated process has a back slash line appender 
+# on the text before this is appended 
+#
+
+echo "grab the error log, before we drop ephemeral"
+docker exec -t ${EPHEMERALCONTAINER} bash -c "cp /var/lib/neo4j/importreport.txt /import/"
+
+echo "dropping ${EPHEMERALCONTAINER} neo4j"
+docker stop ${EPHEMERALCONTAINER}
+docker rm ${EPHEMERALCONTAINER}
+
+ET_LOAD_GRAPH=$SECONDS
+
+#
+# now start up neo4j and use the database we just created 
+#
+#  --publish ${NEO_HTTPS}:${NEO_HTTPS} 
+#  --env NEO4J_dbms_connector_https_listen__address=0.0.0.0:${NEO_HTTPS} 
+#  --env NEO4J_dbms_connectors_default__advertised_address=
+#
+# dbms.directories.certificates=certificates
+# dbms.read_only=true
+# unsupported.dbms.executiontime_limit.enabled=true
+# unsupported.dbms.executiontime_limit.time=120s
+#
+SECONDS=0
+echo "starting neo4j"
+docker run \
+  --user $(id -u):$(id -g) \
+  --name "${CONTAINER}" \
+  --detach \
+  --env NEO4J_USERNAME=${NEO4J_USERNAME} \
+  --env NEO4J_PASSWORD=${NEO4J_PASSWORD} \
+  --restart unless-stopped \
+  --env NEO4J_dbms_connector_bolt_address=0.0.0.0:${NEO_BOLT} \
+  --env NEO4J_dbms_connector_http_address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_http_listen__address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:${NEO_BOLT} \
+  --publish ${NEO_HTTP}:${NEO_HTTP} \
+  --publish ${NEO_BOLT}:${NEO_BOLT} \
+  --volume ${NEO_GRAPH_DIR}/data:/data \
+  --volume ${NEO_GRAPH_DIR}/import:/import \
+  --volume ${NEO_GRAPH_DIR}/plugins:/plugins \
+  --volume ${NEO_GRAPH_DIR}/conf:/var/lib/neo4j/conf \
+  --volume ${NEO_GRAPH_DIR}/logs:/logs \
+  --env NEO4JLABS_PLUGINS="${NEO_PLUGINS}" \
+  --env NEO4J_dbms_connector_bolt_advertised__address=${NEO_HOST}:${NEO_BOLT} \
+  --env NEO4J_dbms_memory_heap_initial__size=${HEAP_SIZE} \
+  --env NEO4J_dbms_memory_heap_max__size=${HEAP_SIZE} \
+  --env NEO4J_dbms_memory_pagecache_size=${PAGECACHE_SIZE} \
+  --env NEO4J_dbms_active__database="${CONTAINER}" \
+  --env NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+  --env NEO4J_apoc_import_file_enabled=true \
+  --env NEO4J_apoc_export_file_enabled=true \
+  --env NEO4J_dbms_security_procedures_unrestricted=apoc.\\\*,algo.\\\* \
+  --env NEO4J_browser_remote__content__hostname__whitelist="${NEO_WHITELIST}" \
+  --env NEO4J_browser_post__connect__cmd="${NEO_PLAY}" \
+   "${DOCKER_IMAGE}" 
+
+
+# use once when upgrading, then remove  
+#  --env=NEO4J_dbms_allow__upgrade=true
+# not needed 
+
+# wait for neo4j, on correct port! 
+./wait4bolt_outside ${CONTAINER} ${NEO_BOLT} 
+ET_START_NEO4J=$SECONDS
+
+SECONDS=0
+#echo "CREATE Indexes"
+docker exec -e NEO4J_USERNAME -e NEO4J_PASSWORD -t ${CONTAINER} bash -c "bin/cypher-shell -a bolt://localhost:${NEO_BOLT} --format verbose --debug </import/ag_indexes.cypher"
+#ET_CREATE_INDEXES=$SECONDS
+
+SECONDS=0
+echo "add num_rels property"
+docker exec -e NEO4J_USERNAME -e NEO4J_PASSWORD -t ${CONTAINER} \
+  bash -c "bin/cypher-shell -a bolt://localhost:${NEO_BOLT} --format verbose --debug </import/ag_num_rels.cypher"
+ET_ADD_NUM_RELS=$SECONDS
+
+SECONDS=0
+echo "warming up the page cache"
+docker exec -e NEO4J_USERNAME -e NEO4J_PASSWORD -t ${CONTAINER} \
+  bash -c "bin/cypher-shell -a bolt://localhost:${NEO_BOLT} --format verbose --debug </import/ag_warm_cache.cypher"
+ET_WARM_CACHE=$SECONDS
+
