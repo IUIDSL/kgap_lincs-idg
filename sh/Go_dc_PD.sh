@@ -27,3 +27,7 @@ python3 -m BioClients.drugcentral.Client get_structure_ids \
 	--i dc_structures_PD.struct_id \
 	--o dc_structure_ids_PD.tsv
 #
+python3 -m BioClients.drugcentral.Client get_structure_atcs \
+	--i dc_structures_PD.struct_id \
+	--o dc_structure_atcs_PD.tsv
+#
