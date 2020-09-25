@@ -3,6 +3,8 @@ Based on Dan Bieber's notebook.
 """
 import sys,os,re,logging
 import pandas as pd
+import pandas.io.sql
+import psycopg2,psycopg2.extras
 import requests
 import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
@@ -50,65 +52,72 @@ b = b.reset_index(level=1, drop=True)
 dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
 print(dcgenes.head(12))
 
-NeoUser=""; NeoPass=""; NeoHost=""; NeoPort="";
 with open(os.environ["HOME"]+"/.neo4j.sh") as fin:
+    NeoUser = ""
+    NeoPass = ""
     while True:
         line = fin.readline()
         if not line: break
-        if re.match('[^#]*NEO4J_USERNAME=', line):
-            NeoUser = re.sub(r'^[^#]*NEO4J_USERNAME="?([^"]*)"?$', r'\1', line.rstrip())
-        elif re.match('[^#]*NEO4J_PASSWORD=', line):
-            NeoPass = re.sub(r'^[^#]*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
-        elif re.match('[^#]*NEO4J_HOST=', line):
-            NeoHost = re.sub(r'^[^#]*NEO4J_HOST="?([^"]*)"?$', r'\1', line.rstrip())
-        elif re.match('[^#]*NEO4J_PORT=', line):
-            NeoPort = re.sub(r'^[^#]*NEO4J_PORT="?([^"]*)"?$', r'\1', line.rstrip())
-    print("NeoHost: \"{}\"; NeoPort: \"{}\"\n".format(NeoHost, NeoPort))
+        if re.match('.*NEO4J_USERNAME=', line):
+            NeoUser = re.sub(r'^.*NEO4J_USERNAME="?([^"]*)"?$', r'\1', line.rstrip())
+        elif re.match('.*NEO4J_PASSWORD=', line):
+            NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
     print("NeoUser: \"{}\"; NeoPass: \"{}\"\n".format(NeoUser, NeoPass))
 
-url = ("neo4j://{}:{}".format(NeoHost, NeoPort))
-db = neo4j.GraphDatabase.driver(url, auth=(NeoUser, NeoPass))
+uri = "neo4j://hoffmann.data2discovery.net:7695"
+db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
+
+
+dbhost="unmtid-dbs.net"; dbport=5433; dbname="drugcentral"; dbusr="drugman"; dbpw="dosage";
+dsn = ("host='%s' port='%s' dbname='%s' user='%s' password='%s'"%(dbhost, dbport, dbname, dbusr, dbpw))
+dbcon = psycopg2.connect(dsn)
+dbcon.cursor_factory = psycopg2.extras.DictCursor
+
+sql = """\
+SELECT DISTINCT
+	ids.identifier AS pubchem_cid,
+	s.id,
+	s.name,
+	atc.l1_code,
+	atc.l1_name
+FROM
+	omop_relationship omop
+JOIN
+	structures s ON omop.struct_id = s.id
+JOIN
+	identifier ids ON ids.struct_id = s.id
+JOIN
+        struct2atc s2atc ON s2atc.struct_id = s.id
+JOIN
+       atc ON atc.code = s2atc.atc_code
+WHERE
+	ids.id_type = 'PUBCHEM_CID'
+	AND atc.l1_name = 'NERVOUS SYSTEM'
+	AND omop.relationship_name = 'indication'
+	AND (
+	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
+	)
+"""
+
+df = pandas.io.sql.read_sql_query(sql, dbcon)
+logging.info("rows,cols: {},{}".format(df.shape[0], df.shape[1]))
+#df.to_csv(sys.stdout, "\t")
+
+logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
 
 #cqlurl = "https://raw.githubusercontent.com/IUIDSL/kgap_lincs-idg/master/cql/pd-adamic-adar.cql"
 #cql = requests.get(cqlurl).text
 
-cql="""\
-MATCH p=(d:Drug)-[]-(s:Signature)-[]-(g:Gene)
-WHERE
-d.pubchem_cid='2130'
-OR d.pubchem_cid='6005'
-OR d.pubchem_cid='1201549'
-OR d.pubchem_cid='2381'
-OR d.pubchem_cid='31101'
-OR d.pubchem_cid='34359'
-OR d.pubchem_cid='2911'
-OR d.pubchem_cid='30843'
-OR d.pubchem_cid='92974'
-OR d.pubchem_cid='5281081'
-OR d.pubchem_cid='6047'
-OR d.pubchem_cid='23497'
-OR d.pubchem_cid='4167'
-OR d.pubchem_cid='4601'
-OR d.pubchem_cid='47811'
-OR d.pubchem_cid='4850'
-OR d.pubchem_cid='119570'
-OR d.pubchem_cid='4919'
-OR d.pubchem_cid='77991'
-OR d.pubchem_cid='5095'
-OR d.pubchem_cid='59227'
-OR d.pubchem_cid='26757'
-OR d.pubchem_cid='5374'
-OR d.pubchem_cid='4659569'
-OR d.pubchem_cid='5572'
-OR d.pubchem_cid='3052776'
-OR d.pubchem_cid='5311037'
-OR d.pubchem_cid='131682'
-OR d.pubchem_cid='10071196'
-OR d.pubchem_cid='76966913'
-WITH g, COUNT(DISTINCT s) AS score RETURN g.id, g.name, score
+cql = """\
+MATCH p=(d:Drug)-[]-(s:Signature)-[]-(g:Gene), p1=(s)-[]-(c:Cell)
+WHERE ( {} )
+WITH g, COUNT(DISTINCT s) AS score
+RETURN g.id, g.name, score
 ORDER BY score DESC
-"""
+""".format( "d.pubchem_cid = '"+("' OR d.pubchem_cid = '").join(list(df.pubchem_cid))+"'")
+
 print("CQL: {}\n".format(cql))
 cdf = cypher2df(cql)
 cdf.head(10)
