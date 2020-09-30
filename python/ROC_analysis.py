@@ -80,7 +80,9 @@ SELECT DISTINCT
 	s.id,
 	s.name,
 	atc.l1_code,
-	atc.l1_name
+	atc.l1_name,
+	omop.concept_name omop_concept_name,
+	omop.snomed_full_name
 FROM
 	omop_relationship omop
 JOIN
@@ -95,14 +97,19 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
-	AND (
-	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
-	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
-	)
 """
+#	AND (
+#	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+#	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
+#	)
 
 df = pandas.io.sql.read_sql_query(sql, dbcon)
 logging.info("rows,cols: {},{}".format(df.shape[0], df.shape[1]))
+logging.info("drug (pubchem_cid) count: {}".format(df['pubchem_cid'].nunique()))
+for omop_concept_name in df['omop_concept_name'].sort_values().unique():
+    logging.info("omop_concept_name: \"{}\"".format(omop_concept_name))
+for snomed_full_name in df['snomed_full_name'].sort_values().unique():
+    logging.info("snomed_full_name: \"{}\"".format(snomed_full_name))
 #df.to_csv(sys.stdout, "\t")
 
 logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
