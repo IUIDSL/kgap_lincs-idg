@@ -97,11 +97,11 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
+	AND (
+	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
+	)
 """
-#	AND (
-#	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
-#	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
-#	)
 
 df = pandas.io.sql.read_sql_query(sql, dbcon)
 logging.info("rows,cols: {},{}".format(df.shape[0], df.shape[1]))
@@ -112,7 +112,7 @@ for snomed_full_name in df['snomed_full_name'].sort_values().unique():
     logging.info("snomed_full_name: \"{}\"".format(snomed_full_name))
 #df.to_csv(sys.stdout, "\t")
 
-logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
+logging.info("PUBCHEM_CIDs: {}".format(",".join(list(df.pubchem_cid))))
 
 #cqlurl = "https://raw.githubusercontent.com/IUIDSL/kgap_lincs-idg/master/cql/pd-adamic-adar.cql"
 #cql = requests.get(cqlurl).text
@@ -123,7 +123,7 @@ WHERE ( {} )
 WITH g, COUNT(DISTINCT s) AS score
 RETURN g.id, g.name, score
 ORDER BY score DESC
-""".format( "d.pubchem_cid = '"+("' OR d.pubchem_cid = '").join(list(df.pubchem_cid))+"'")
+""".format("d.pubchem_cid = '"+("' OR d.pubchem_cid = '").join(list(df.pubchem_cid))+"'")
 
 print("CQL: {}\n".format(cql))
 cdf = cypher2df(cql)
