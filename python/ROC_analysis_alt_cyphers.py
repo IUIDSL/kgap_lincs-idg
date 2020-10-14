@@ -121,8 +121,8 @@ logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
 #cql = requests.get(cqlurl).text
 #, p1=(s)-[]-(c:Cell)"
 
-#score_attribute = "sum(s.degree)"
-score_attribute = "sum(r.zscore)"
+score_attribute = "sum(s.degree)"
+#score_attribute = "sum(r.zscore)"
 #score_attribute = "COUNT(distinct s)"      # distinct s = s ?
 #WHERE (toInteger(d.pubchem_cid) in [ {} ])
 
