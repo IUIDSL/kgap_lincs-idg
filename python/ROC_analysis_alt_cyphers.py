@@ -66,8 +66,8 @@ with open(os.environ["HOME"]+"/.neo4j.sh") as fin:
             NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
     print("NeoUser: \"{}\"; NeoPass: \"{}\"\n".format(NeoUser, NeoPass))
 
-#uri = "neo4j://hoffmann.data2discovery.net:7695"
-uri = "neo4j://localhost:7695"
+uri = "neo4j://hoffmann.data2discovery.net:7695"
+#uri = "neo4j://localhost:7695"
 db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
 
