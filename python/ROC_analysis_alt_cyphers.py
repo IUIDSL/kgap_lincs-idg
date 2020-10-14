@@ -66,8 +66,8 @@ with open(os.environ["HOME"]+"/.neo4j.sh") as fin:
             NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
     print("NeoUser: \"{}\"; NeoPass: \"{}\"\n".format(NeoUser, NeoPass))
 
-uri = "neo4j://hoffmann.data2discovery.net:7695"
-#uri = "neo4j://localhost:7695"
+#uri = "neo4j://hoffmann.data2discovery.net:7695"
+uri = "neo4j://localhost:7695"
 db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
 
@@ -121,20 +121,22 @@ logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
 #cql = requests.get(cqlurl).text
 #, p1=(s)-[]-(c:Cell)"
 
-score_attribute = "sum(s.degree)"
-#score_attribute = "sum(r.zscore)"
-#score_attribute = "COUNT(s)"      # distinct s = s ?
-#, p1=(s)-[]-(c:Cell)
+#score_attribute = "sum(s.degree)"
+score_attribute = "sum(r.zscore)"
+#score_attribute = "COUNT(distinct s)"      # distinct s = s ?
+#WHERE (toInteger(d.pubchem_cid) in [ {} ])
+
+cid_list = list(df.pubchem_cid.array.astype('int'))
 
 cql = """\
-MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene)
-WHERE ( {} )
+MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
+WHERE (d.pubchem_cid in {})
 WITH g, {} AS score
 RETURN g.id, g.name, score
 ORDER BY score DESC
-""".format( "d.pubchem_cid = '"+("' OR d.pubchem_cid = '").join(list(df.pubchem_cid))+"'", score_attribute)
-'ORDER BY score DESC'
-print("CQL: {}\n".format(cql))
+""".format(cid_list, score_attribute)
+
+print("CQL: {}\n", cql)
 cdf = cypher2df(cql)
 cdf.head(10)
 
