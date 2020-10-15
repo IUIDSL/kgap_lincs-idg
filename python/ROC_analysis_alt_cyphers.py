@@ -8,6 +8,8 @@ import psycopg2, psycopg2.extras
 import requests
 import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import accuracy_score, classification_report, matthews_corrcoef
+#Can we plot Accuracy and MCC on ROC plot? All three functions take (y_true, y_pred) logical vectors.
 from matplotlib import pyplot as plt
 import neo4j
 
@@ -66,8 +68,8 @@ with open(os.environ["HOME"]+"/.neo4j.sh") as fin:
             NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
     print("NeoUser: \"{}\"; NeoPass: \"{}\"\n".format(NeoUser, NeoPass))
 
-#uri = "neo4j://hoffmann.data2discovery.net:7695"
-uri = "neo4j://localhost:7695"
+uri = "neo4j://hoffmann.data2discovery.net:7695"
+#uri = "neo4j://localhost:7695"
 db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
 
@@ -115,7 +117,6 @@ for snomed_full_name in df['snomed_full_name'].sort_values().unique():
     logging.info("snomed_full_name: \"{}\"".format(snomed_full_name))
 #df.to_csv(sys.stdout, "\t")
 
-logging.info("PUBCHEM_CIDs: {}".format(df.pubchem_cid.str.join(",")))
 
 #cqlurl = "https://raw.githubusercontent.com/IUIDSL/kgap_lincs-idg/master/cql/pd-adamic-adar.cql"
 #cql = requests.get(cqlurl).text
@@ -129,6 +130,7 @@ score_attribute = "sum(s.degree)/sqrt(count(r))"
 #WHERE (toInteger(d.pubchem_cid) in [ {} ])
 
 cid_list = list(df.pubchem_cid.array.astype('int'))
+logging.info("PUBCHEM_CIDs: {}".format(str(cid_list)))
 
 cql = """\
 MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)

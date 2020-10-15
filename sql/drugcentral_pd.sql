@@ -18,7 +18,10 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
-	AND (omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+	AND (
+	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
+	)
 ORDER BY
         s.id
 	;
