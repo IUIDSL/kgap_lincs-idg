@@ -8,6 +8,7 @@ import psycopg2,psycopg2.extras
 import requests
 import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import classification_report, accuracy_score, matthews_corrcoef, f1_score, precision_score, recall_score
 from matplotlib import pyplot as plt
 import neo4j
 
@@ -97,11 +98,11 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
-	AND (
-	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
-	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
-	)
 """
+#	AND (
+#	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
+#	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
+#	)
 
 df = pandas.io.sql.read_sql_query(sql, dbcon)
 logging.info("rows,cols: {},{}".format(df.shape[0], df.shape[1]))
@@ -114,21 +115,30 @@ for snomed_full_name in df['snomed_full_name'].sort_values().unique():
 
 logging.info("PUBCHEM_CIDs: {}".format(",".join(list(df.pubchem_cid))))
 
-#cqlurl = "https://raw.githubusercontent.com/IUIDSL/kgap_lincs-idg/master/cql/pd-adamic-adar.cql"
-#cql = requests.get(cqlurl).text
+#score_attribute = "sum(s.degree)"
+#score_attribute = "sum(r.zscore)"
+score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
+#score_attribute = "COUNT(distinct s)"      # distinct s = s ?
+
+cid_list = list(df.pubchem_cid.array.astype('int'))
 
 cql = """\
-MATCH p=(d:Drug)-[]-(s:Signature)-[]-(g:Gene), p1=(s)-[]-(c:Cell)
-WHERE ( {} )
-WITH g, COUNT(DISTINCT s) AS score
+MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
+WHERE (d.pubchem_cid in {})
+WITH g, {} AS score
 RETURN g.id, g.name, score
 ORDER BY score DESC
-""".format("d.pubchem_cid = '"+("' OR d.pubchem_cid = '").join(list(df.pubchem_cid))+"'")
+""".format(cid_list, score_attribute)
 
-print("CQL: {}\n".format(cql))
+print("CQL: {}\n", cql)
 cdf = cypher2df(cql)
 cdf.head(10)
 
+"""
+ does not work, is there an index that must be altered?
+ cdf.sort_values("g.name", axis=0, ascending=True)
+"""
 plt = ROCplotter(cdf, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA)')
 plt.show()
+
