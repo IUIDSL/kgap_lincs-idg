@@ -62,7 +62,6 @@ WHERE
 """
 dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
 dcgenes = dcgenes.astype({'moa': 'boolean'})
-dcgenes = dcgenes.astype({'moa': 'boolean'})
 print(dcgenes.head())
 
 # Parse and split delimited gene symbols to separate rows:
@@ -99,6 +98,7 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
+    AND omop.concept_name ~* 'Parkinson'
 """
 
 df = pandas.io.sql.read_sql_query(sql, dbcon)
@@ -123,14 +123,12 @@ uri = "neo4j://hoffmann.data2discovery.net:7695"
 db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
 
-#score_attribute = "sum(s.degree)"
-#score_attribute = "sum(r.zscore)"
-score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
-#score_attribute = "COUNT(distinct s)"      # distinct s = s ?
-
 cid_list = list(df.pubchem_cid.array.astype('int'))
 
-cql = """\
+#score_attribute = "COUNT(distinct s)"
+
+score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
+cql_z = """\
 MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
 WHERE (d.pubchem_cid in {})
 WITH g, {} AS score
@@ -138,15 +136,40 @@ RETURN g.id, g.name, score
 ORDER BY score DESC
 """.format(cid_list, score_attribute)
 
-print("CQL: {}\n", cql)
-cdf = cypher2df(cql)
-cdf.head(10)
+print("CQL: {}\n", cql_z)
+cdf_z = cypher2df(cql_z)
+cdf_z.head(10)
+
+score_attribute = "sum(s.degree)"
+cql_d = """\
+MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
+WHERE (d.pubchem_cid in {})
+WITH g, {} AS score
+RETURN g.id, g.name, score
+ORDER BY score DESC
+""".format(cid_list, score_attribute)
+
+print("CQL: {}\n", cql_d)
+cdf_d = cypher2df(cql_d)
+cdf_d.head(10)
 
 """
  does not work, is there an index that must be altered?
  cdf.sort_values("g.name", axis=0, ascending=True)
 """
-plt = ROCplotter(cdf, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score", show_mcc=True)
-plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA)')
+
+plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, Z-weighted')
 plt.show()
 
+plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), Z-weighted')
+plt.show()
+
+plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, D-weighted')
+plt.show()
+
+plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), D-weighted')
+plt.show()
