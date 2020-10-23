@@ -127,19 +127,6 @@ cid_list = list(df.pubchem_cid.array.astype('int'))
 
 #score_attribute = "COUNT(distinct s)"
 
-score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
-cql_z = """\
-MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
-WHERE (d.pubchem_cid in {})
-WITH g, {} AS score
-RETURN g.id, g.name, score
-ORDER BY score DESC
-""".format(cid_list, score_attribute)
-
-print("CQL: {}\n", cql_z)
-cdf_z = cypher2df(cql_z)
-cdf_z.head(10)
-
 score_attribute = "sum(s.degree)"
 cql_d = """\
 MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
@@ -152,24 +139,55 @@ ORDER BY score DESC
 print("CQL: {}\n", cql_d)
 cdf_d = cypher2df(cql_d)
 cdf_d.head(10)
+# Save results
+cdf_d.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
+#cdf_d.to_csv("results_dweighted.tsv", "\t", index=False)
+
+score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
+cql_z = """\
+MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
+WHERE (d.pubchem_cid in {})
+WITH g, {} AS score
+RETURN g.id, g.name, score
+ORDER BY score DESC
+""".format(cid_list, score_attribute)
+
+print("CQL: {}\n", cql_z)
+cdf_z = cypher2df(cql_z)
+cdf_z.head(10)
+# Save results
+cdf_z.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
+cdf_z.to_csv("results_zweighted.tsv", "\t", index=False)
 
 """
  does not work, is there an index that must be altered?
  cdf.sort_values("g.name", axis=0, ascending=True)
 """
 
-plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
-plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, Z-weighted')
-plt.show()
+from statsmodels.distributions.empirical_distribution import ECDF
 
-plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
-plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), Z-weighted')
-plt.show()
+ecdf = ECDF(cdf_z.kgapScore)
+plt.plot(ecdf.x, ecdf.y)
+plt.title("KGAP-LINCS Z-weighted Score ECDF")
+plt.savefig("KGAP-LINCS_ScoreEcdf.png", format="png")
 
-plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, D-weighted')
-plt.show()
+plt.savefig("KGAP-LINCS_ROC_Dweighted.png", format="png")
+#plt.show()
 
-plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "g.name", gene_tag_v="gene", score_tag = "score")
+plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), D-weighted')
-plt.show()
+plt.savefig("KGAP-LINCS_ROC_DweightedMoA.png", format="png")
+#plt.show()
+
+plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, Z-weighted')
+plt.savefig("KGAP-LINCS_ROC_Zweighted.png", format="png")
+#plt.show()
+
+plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
+plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), Z-weighted')
+plt.savefig("KGAP-LINCS_ROC_ZweightedMoA.png", format="png")
+#plt.show()
+
