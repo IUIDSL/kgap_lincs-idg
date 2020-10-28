@@ -56,9 +56,14 @@ JOIN
         structures s ON s.id = atf.struct_id
 JOIN
         omop_relationship omop ON omop.struct_id = s.id
+JOIN
+        struct2atc s2atc ON s2atc.struct_id = s.id
+JOIN
+       atc ON atc.code = s2atc.atc_code
 WHERE
         omop.relationship_name = 'indication'
         AND omop.concept_name ~* 'Parkinson'
+	AND atc.l1_name = 'NERVOUS SYSTEM'
 """
 dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
 dcgenes = dcgenes.astype({'moa': 'boolean'})
