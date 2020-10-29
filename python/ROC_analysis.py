@@ -76,8 +76,8 @@ b.columns = ['gene']
 logging.debug("0-level index: {}".format(b.index.levels[0]))
 b = b.reset_index(level=1, drop=True)
 dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
+dcgenes.to_csv("dcgenes.tsv", "\t", index=False)
 print(dcgenes.head(12))
-
 
 # Query DrugCentral for PD drugs:
 sql = """\
@@ -106,9 +106,10 @@ WHERE
     AND omop.concept_name ~* 'Parkinson'
 """
 
-df = pandas.io.sql.read_sql_query(sql, dbcon)
-logging.debug("rows,cols: {},{}".format(df.shape[0], df.shape[1]))
-logging.info("Drug PUBCHEM_CIDs (N={}): {}".format(df['pubchem_cid'].nunique(), ",".join(list(df.pubchem_cid))))
+dcdrugs = pandas.io.sql.read_sql_query(sql, dbcon)
+logging.debug("rows,cols: {},{}".format(dcdrugs.shape[0], dcdrugs.shape[1]))
+logging.info("Drug PUBCHEM_CIDs (N={}): {}".format(dcdrugs['pubchem_cid'].nunique(), ",".join(list(dcdrugs.pubchem_cid))))
+dcdrugs.to_csv("dcdrugs.tsv", "\t", index=False)
 
 ###
 # Connect to Neo4j db:
@@ -128,7 +129,7 @@ uri = "neo4j://hoffmann.data2discovery.net:7695"
 db = neo4j.GraphDatabase.driver(uri, auth= (NeoUser, NeoPass))
 session = db.session()
 
-cid_list = list(df.pubchem_cid.array.astype('int'))
+cid_list = list(dcdrugs.pubchem_cid.array.astype('int'))
 
 #score_attribute = "COUNT(distinct s)"
 

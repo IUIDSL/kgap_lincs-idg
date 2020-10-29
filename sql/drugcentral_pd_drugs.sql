@@ -1,7 +1,7 @@
 SELECT DISTINCT
 	ids.identifier AS pubchem_cid,
-	s.id,
-	s.name,
+	s.id dc_struct_id,
+	s.name dc_name,
 	atc.l1_code,
 	atc.l1_name
 FROM
@@ -18,10 +18,7 @@ WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND atc.l1_name = 'NERVOUS SYSTEM'
 	AND omop.relationship_name = 'indication'
-	AND (
-	(omop.concept_name ~* 'Parkinson' OR omop.snomed_full_name ~* 'Parkinson')
-	OR (omop.concept_name ~* 'dyskinesia' OR omop.snomed_full_name ~* 'dyskinesia')
-	)
+	AND omop.concept_name ~* 'Parkinson'
 ORDER BY
-        s.id
+        s.name
 	;

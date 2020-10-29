@@ -21,7 +21,12 @@ logging.info("results: {}x{}; {}".format(results.shape[0], results.shape[1], (',
 
 # Sort by score, keep top hits only.
 results = results.sort_values(by=['kgapScore'], ascending=[False])
-results = results.iloc[1:100,]
+dcgenes = pd.read_csv("dcgenes.tsv", "\t")
+dcgenes["dcgene"] = True
+results = pd.merge(results, dcgenes[["gene", "dcgene", "moa"]], how="left", left_on="geneSymbol", right_on="gene")
+N_hits = 500
+results = results.iloc[1:N_hits,]
+logging.info("DCGENES: {}; in top {} hits: {}".format(dcgenes.gene.nunique(), N_hits, sum(results.dcgene.notna())))
 #print(results.head(10))
 
 params = bc_yaml.ReadParamFile(os.environ['HOME']+"/.tcrd.yaml")
@@ -40,6 +45,6 @@ logging.info("results: {}x{}; {}".format(results.shape[0], results.shape[1], (',
 for tag in ["target_tdl", "target_fam"]:
   for key, val in results[tag].value_counts().iteritems():
     logging.info('\t{}: {:6d}: {}'.format(tag, val, key))
-results = results[["ncbiGeneId", "geneSymbol", "kgapScore", "target_id", "target_fam", "target_name", "target_tdl", "protein_id", "protein_uniprot", "num_important_diseases", "novelty", "diseases"]]
-results.columns = ["ncbiGeneId", "geneSymbol", "kgapScore", "tcrdTargetid", "tcrdTargetFam", "tcrdTargetName", "tcrdTargetTDL", "tcrdTroteinId", "UniprotId", "num_important_diseases", "novelty"]
+results = results[["ncbiGeneId", "geneSymbol", "kgapScore", "target_id", "target_fam", "target_name", "target_tdl", "protein_id", "protein_uniprot", "num_important_diseases", "novelty", "dcgene", "moa"]]
+results.columns = ["ncbiGeneId", "geneSymbol", "kgapScore", "tcrdTargetid", "tcrdTargetFam", "tcrdTargetName", "tcrdTargetTDL", "tcrdTroteinId", "UniprotId", "num_important_diseases", "novelty", "dcgene", "moa"]
 results.to_csv("results_tcrd.tsv", sep="\t", index=False)
