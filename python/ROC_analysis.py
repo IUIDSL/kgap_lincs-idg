@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 """
-Based on Dan Bieber's notebook.
+See also notebook.
 """
 import sys,os,re,logging
 import pandas as pd, pandas.io.sql
@@ -8,6 +9,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, roc_auc_score, accuracy_score, matthews_corrcoef, f1_score
 from matplotlib import pyplot as plt
 import neo4j
+from statsmodels.distributions.empirical_distribution import ECDF
 
 logging.basicConfig(level=logging.INFO)
 
@@ -44,41 +46,7 @@ dsn = ("host='%s' port='%s' dbname='%s' user='%s' password='%s'"%(dbhost, dbport
 dbcon = psycopg2.connect(dsn)
 dbcon.cursor_factory = psycopg2.extras.DictCursor
 
-# Query DrugCentral for PD genes:
-sql="""\
-SELECT DISTINCT
-        atf.target_name,
-        atf.gene genes,
-        atf.moa
-FROM
-        act_table_full atf
-JOIN
-        structures s ON s.id = atf.struct_id
-JOIN
-        omop_relationship omop ON omop.struct_id = s.id
-JOIN
-        struct2atc s2atc ON s2atc.struct_id = s.id
-JOIN
-       atc ON atc.code = s2atc.atc_code
-WHERE
-        omop.relationship_name = 'indication'
-        AND omop.concept_name ~* 'Parkinson'
-	AND atc.l1_name = 'NERVOUS SYSTEM'
-"""
-dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
-dcgenes = dcgenes.astype({'moa': 'boolean'})
-print(dcgenes.head())
-
-# Parse and split delimited gene symbols to separate rows:
-b = pd.DataFrame(dcgenes.genes.str.split('|').tolist(), index=dcgenes.index).stack()
-b = pd.DataFrame(b)
-b.columns = ['gene']
-logging.debug("0-level index: {}".format(b.index.levels[0]))
-b = b.reset_index(level=1, drop=True)
-dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
-dcgenes.to_csv("dcgenes.tsv", "\t", index=False)
-print(dcgenes.head(12))
-
+###
 # Query DrugCentral for PD drugs:
 sql = """\
 SELECT DISTINCT
@@ -112,6 +80,47 @@ logging.info("Drug PUBCHEM_CIDs (N={}): {}".format(dcdrugs['pubchem_cid'].nuniqu
 dcdrugs.to_csv("dcdrugs.tsv", "\t", index=False)
 
 ###
+# Query DrugCentral for PD genes:
+sql="""\
+SELECT DISTINCT
+        atf.target_name,
+        atf.gene genes,
+        atf.moa
+FROM
+        act_table_full atf
+JOIN
+        structures s ON s.id = atf.struct_id
+JOIN
+        omop_relationship omop ON omop.struct_id = s.id
+JOIN
+        struct2atc s2atc ON s2atc.struct_id = s.id
+JOIN
+       atc ON atc.code = s2atc.atc_code
+WHERE
+        omop.relationship_name = 'indication'
+        AND omop.concept_name ~* 'Parkinson'
+	AND atc.l1_name = 'NERVOUS SYSTEM'
+"""
+dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
+dcgenes = dcgenes.astype({'moa': 'boolean'})
+#print(dcgenes.head())
+logging.info("Targets (pre-multi-split): {}".format(dcgenes['genes'].nunique()))
+logging.info("Targets, MoA (pre-multi-split): {}".format(dcgenes[(dcgenes.moa)]['genes'].nunique()))
+logging.info("Targets, MoA (pre-multi-split): {}".format(dcgenes[(dcgenes.moa)]['genes'].str.cat(sep=',')))
+
+# Parse and split delimited gene symbols to separate rows:
+b = pd.DataFrame(dcgenes.genes.str.split('|').tolist(), index=dcgenes.index).stack()
+b = pd.DataFrame(b)
+b.columns = ['gene']
+logging.debug("0-level index: {}".format(b.index.levels[0]))
+b = b.reset_index(level=1, drop=True)
+dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
+logging.info("Targets (post-multi-split): {}".format(dcgenes['gene'].nunique()))
+logging.info("Targets, MoA (post-multi-split): {}".format(dcgenes[(dcgenes.moa)]['gene'].nunique()))
+dcgenes.to_csv("dcgenes.tsv", "\t", index=False)
+#print(dcgenes.head(12))
+
+###
 # Connect to Neo4j db:
 with open(os.environ["HOME"]+"/.neo4j.sh") as fin:
     NeoUser = ""
@@ -142,7 +151,7 @@ RETURN g.id, g.name, score
 ORDER BY score DESC
 """.format(cid_list, score_attribute)
 
-print("CQL: {}\n", cql_d)
+logging.debug("CQL: {}".format(cql_d))
 cdf_d = cypher2df(cql_d)
 cdf_d.head(10)
 # Save results
@@ -158,7 +167,7 @@ RETURN g.id, g.name, score
 ORDER BY score DESC
 """.format(cid_list, score_attribute)
 
-print("CQL: {}\n", cql_z)
+logging.debug("CQL: {}".format(cql_z))
 cdf_z = cypher2df(cql_z)
 cdf_z.head(10)
 # Save results
@@ -170,8 +179,6 @@ cdf_z.to_csv("results_zweighted.tsv", "\t", index=False)
  cdf.sort_values("g.name", axis=0, ascending=True)
 """
 
-from statsmodels.distributions.empirical_distribution import ECDF
-
 ecdf = ECDF(cdf_z.kgapScore)
 plt.plot(ecdf.x, ecdf.y)
 plt.title("KGAP-LINCS Z-weighted Score ECDF")
@@ -180,20 +187,17 @@ plt.savefig("KGAP-LINCS_ScoreEcdf.png", format="png")
 plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, D-weighted')
 plt.savefig("KGAP-LINCS_ROC_Dweighted.png", format="png")
-#plt.show()
 
 plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), D-weighted')
 plt.savefig("KGAP-LINCS_ROC_DweightedMoA.png", format="png")
-#plt.show()
 
 plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, Z-weighted')
 plt.savefig("KGAP-LINCS_ROC_Zweighted.png", format="png")
-#plt.show()
 
 plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), Z-weighted')
 plt.savefig("KGAP-LINCS_ROC_ZweightedMoA.png", format="png")
-#plt.show()
+plt.show()
 
