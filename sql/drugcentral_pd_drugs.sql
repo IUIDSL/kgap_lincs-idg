@@ -2,6 +2,8 @@ SELECT DISTINCT
 	ids.identifier AS pubchem_cid,
 	s.id dc_struct_id,
 	s.name dc_name,
+	s.smiles,
+	s.inchikey,
 	atc.l1_code,
 	atc.l1_name
 FROM
