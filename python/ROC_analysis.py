@@ -53,6 +53,7 @@ SELECT DISTINCT
 	ids.identifier AS pubchem_cid,
 	s.id,
 	s.name,
+	s.smiles,
 	atc.l1_code,
 	atc.l1_name,
 	omop.concept_name omop_concept_name,
