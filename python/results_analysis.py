@@ -24,7 +24,7 @@ results = results.sort_values(by=['kgapScore'], ascending=[False])
 dcgenes = pd.read_csv("dcgenes.tsv", "\t")
 dcgenes["dcgene"] = True
 results = pd.merge(results, dcgenes[["gene", "dcgene", "moa"]], how="left", left_on="geneSymbol", right_on="gene")
-N_hits = 500
+N_hits = 2000
 results = results.iloc[1:N_hits,]
 logging.info("DCGENES: {}; in top {} hits: {}".format(dcgenes.gene.nunique(), N_hits, sum(results.dcgene.notna())))
 #print(results.head(10))
@@ -36,7 +36,8 @@ tcrd = bc_tcrd.GetTargets(dbcon, list(results.ncbiGeneId), "GENEID", fout=None)
 logging.info("tcrd: {}x{}; {}".format(tcrd.shape[0], tcrd.shape[1], (','.join(list(tcrd.columns)))))
 #print(tcrd.head(10))
 
-tinx = bc_tinx.GetTargetByUniprot(list(tcrd.protein_uniprot))
+# TINX disease_id=47 is DOID:14330
+tinx = bc_tinx.GetDiseaseTargets([47])
 logging.info("tinx: {}x{}; {}".format(tinx.shape[0], tinx.shape[1], (','.join(list(tinx.columns)))))
 
 results = pd.merge(results, tcrd, left_on="geneSymbol", right_on="protein_sym")
@@ -45,6 +46,14 @@ logging.info("results: {}x{}; {}".format(results.shape[0], results.shape[1], (',
 for tag in ["target_tdl", "target_fam"]:
   for key, val in results[tag].value_counts().iteritems():
     logging.info('\t{}: {:6d}: {}'.format(tag, val, key))
-results = results[["ncbiGeneId", "geneSymbol", "kgapScore", "target_id", "target_fam", "target_name", "target_tdl", "protein_id", "protein_uniprot", "num_important_diseases", "novelty", "dcgene", "moa"]]
-results.columns = ["ncbiGeneId", "geneSymbol", "kgapScore", "tcrdTargetid", "tcrdTargetFam", "tcrdTargetName", "tcrdTargetTDL", "tcrdTroteinId", "UniprotId", "num_important_diseases", "novelty", "dcgene", "moa"]
+results = results[["ncbiGeneId", "geneSymbol", "kgapScore",
+   "target_id", "target_fam", "target_name",
+   "target_tdl", "protein_id", "protein_uniprot",
+   "articles", "nds_rank", "importance", "novelty",
+   "dcgene", "moa"]]
+results.columns = ["ncbiGeneId", "geneSymbol", "kgapScore",
+   "tcrdTargetid", "tcrdTargetFam", "tcrdTargetName",
+   "tcrdTargetTDL", "tcrdTroteinId", "UniprotId",
+   "tinx_articles", "nds_rank", "tinx_importance", "tinx_novelty",
+   "dcgene", "moa"]
 results.to_csv("results_tcrd.tsv", sep="\t", index=False)
