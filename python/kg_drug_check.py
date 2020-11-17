@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 ###
 
-dcdrugs = pd.read_csv("dcdrugs.tsv", "\t")
+dcdrugs = pd.read_csv("../data/dcdrugs.tsv", "\t")
 dcdrugs["pubchem_cid"] = dcdrugs["pubchem_cid"].astype(str)
 logging.debug("DCDRUGS rows,cols: {},{}".format(dcdrugs.shape[0], dcdrugs.shape[1]))
 logging.info("DCDRUGS columns: {}".format(str(list(dcdrugs.columns))))

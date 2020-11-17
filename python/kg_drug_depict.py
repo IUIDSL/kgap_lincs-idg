@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 ###
 
-dcdrugs = pd.read_csv("dcdrugs.tsv", "\t")
+dcdrugs = pd.read_csv("../data/dcdrugs.tsv", "\t")
 dcdrugs["pubchem_cid"] = dcdrugs["pubchem_cid"].astype(str)
 logging.info("DCDRUGS n_rows: {}".format(dcdrugs.shape[0]))
 logging.info("DCDRUGS PUBCHEM_CIDs: {}".format(dcdrugs['pubchem_cid'].nunique()))
@@ -34,8 +34,8 @@ for i in range(smis.shape[0]):
   img.info = {'name':name, 'pubchem_cid':pubchem_cid}
   #img.show()
   logging.info("{}. \"{}\" ({})".format(i+1, img.info['name'], img.info['pubchem_cid']))
-  img.save("dcdrugs_{:02d}_{}.png".format(i+1, name), "PNG")
+  img.save("../data/dcdrugs_{:02d}_{}.png".format(i+1, name), "PNG")
   #img.thumbnail((128, 128))
-  #img.save("dcdrugs_{:02d}_{}.thumbnail".format(i+1, name), "PNG")
+  #img.save("../data/dcdrugs_{:02d}_{}.thumbnail".format(i+1, name), "PNG")
 
 logging.info("Images: {}".format(i+1))

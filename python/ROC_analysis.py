@@ -6,7 +6,9 @@ import sys,os,re,logging
 import pandas as pd, pandas.io.sql
 import psycopg2,psycopg2.extras
 import numpy as np
-from sklearn.metrics import roc_curve, roc_auc_score, accuracy_score, matthews_corrcoef, f1_score
+from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import precision_score, recall_score, accuracy_score
+from sklearn.metrics import matthews_corrcoef, f1_score
 from matplotlib import pyplot as plt
 import neo4j
 from statsmodels.distributions.empirical_distribution import ECDF
@@ -20,7 +22,8 @@ def cypher2df(cql):
     return(df)
 
 ###
-def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", score_tag = "score", show_mcc=False):
+def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", score_tag = "score",
+	show_precision=True, show_recall=True, show_accuracy=False, show_mcc=False):
     """From query results and a validation geneset, plot ROC curve with AUC."""
     vga = np.array(results[gene_tag_r].isin(valgenes[gene_tag_v]).astype(np.int8))
     fpr, tpr, thresholds = roc_curve(vga, np.array(results[score_tag]))
@@ -28,14 +31,23 @@ def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", scor
     logging.info("ROC thresholds: range: [{:.2f}, {:.2f}], mean:{:.2f}; median:{:.2f}".format(min(thresholds), max(thresholds), np.mean(thresholds), np.median(thresholds)))
     aucval = roc_auc_score(vga, np.array(results[score_tag]))
     plt.figure(figsize=(7,5), dpi=100)
-    plt.plot(fpr, tpr, color='darkorange', lw=1, label = 'ROC curve')
+    plt.plot(fpr, tpr, color='darkorange', lw=2, linestyle="-", label = 'ROC curve')
     plt.annotate("AUC: {:0.2f}\nresults: {}\npositives: {}".format(aucval, results.shape[0], len(tpr)), xy=(.8, .4), xycoords="axes fraction")
-    plt.plot([0,1], [0,1], color ='blue', lw=1, linestyle='--')
-    if show_mcc:
-      mccs = [matthews_corrcoef(vga, results[score_tag]>=t) for t in thresholds] #correct?
-      plt.plot(fpr, mccs, color='gray', lw=1, label = 'MCC (max={:.3f})'.format(max(mccs)))
+    plt.plot([0,1], [0,1], color ='lightgray', lw=1, linestyle='--')
     plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
+    plt.ylabel('True Positive Rate (recall)')
+    if show_precision:
+      prec = [precision_score(vga, results[score_tag]>=t, zero_division=0) for t in thresholds]
+      plt.plot(fpr, prec, color='cyan', lw=1, linestyle="-.", label='Precision (max={:.3f})'.format(max(prec)))
+    if show_recall:
+      recl = [recall_score(vga, results[score_tag]>=t) for t in thresholds]
+      plt.plot(fpr, recl, color='green', lw=1, linestyle=":", label='Recall')
+    if show_accuracy:
+      acc = [accuracy_score(vga, results[score_tag]>=t) for t in thresholds]
+      plt.plot(fpr, acc, color='gray', lw=1, label='Accuracy')
+    if show_mcc:
+      mccs = [matthews_corrcoef(vga, results[score_tag]>=t) for t in thresholds]
+      plt.plot(fpr, mccs, color='darkgray', lw=1, label='MCC (max={:.3f})'.format(max(mccs)))
     plt.legend(loc="lower right")
     return(plt)
 
@@ -78,7 +90,7 @@ WHERE
 dcdrugs = pandas.io.sql.read_sql_query(sql, dbcon)
 logging.debug("rows,cols: {},{}".format(dcdrugs.shape[0], dcdrugs.shape[1]))
 logging.info("Drug PUBCHEM_CIDs (N={}): {}".format(dcdrugs['pubchem_cid'].nunique(), ",".join(list(dcdrugs.pubchem_cid))))
-dcdrugs.to_csv("dcdrugs.tsv", "\t", index=False)
+dcdrugs.to_csv("../data/dcdrugs.tsv", "\t", index=False)
 
 ###
 # Query DrugCentral for PD genes:
@@ -118,7 +130,7 @@ b = b.reset_index(level=1, drop=True)
 dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
 logging.info("Targets (post-multi-split): {}".format(dcgenes['gene'].nunique()))
 logging.info("Targets, MoA (post-multi-split): {}".format(dcgenes[(dcgenes.moa)]['gene'].nunique()))
-dcgenes.to_csv("dcgenes.tsv", "\t", index=False)
+dcgenes.to_csv("../data/dcgenes.tsv", "\t", index=False)
 #print(dcgenes.head(12))
 
 ###
@@ -157,7 +169,7 @@ cdf_d = cypher2df(cql_d)
 cdf_d.head(10)
 # Save results
 cdf_d.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
-#cdf_d.to_csv("results_dweighted.tsv", "\t", index=False)
+#cdf_d.to_csv("../data/results_dweighted.tsv", "\t", index=False)
 
 score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
 cql_z = """\
@@ -173,7 +185,7 @@ cdf_z = cypher2df(cql_z)
 cdf_z.head(10)
 # Save results
 cdf_z.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
-cdf_z.to_csv("results_zweighted.tsv", "\t", index=False)
+cdf_z.to_csv("../data/results_zweighted.tsv", "\t", index=False)
 
 """
  does not work, is there an index that must be altered?
@@ -183,22 +195,22 @@ cdf_z.to_csv("results_zweighted.tsv", "\t", index=False)
 ecdf = ECDF(cdf_z.kgapScore)
 plt.plot(ecdf.x, ecdf.y)
 plt.title("KGAP-LINCS Z-weighted Score ECDF")
-plt.savefig("KGAP-LINCS_ScoreEcdf.png", format="png")
+plt.savefig("../data/KGAP-LINCS_ScoreEcdf.png", format="png")
 
 plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, D-weighted')
-plt.savefig("KGAP-LINCS_ROC_Dweighted.png", format="png")
+plt.savefig("../data/KGAP-LINCS_ROC_Dweighted.png", format="png")
 
 plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), D-weighted')
-plt.savefig("KGAP-LINCS_ROC_DweightedMoA.png", format="png")
+plt.savefig("../data/KGAP-LINCS_ROC_DweightedMoA.png", format="png")
 
 plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes, Z-weighted')
-plt.savefig("KGAP-LINCS_ROC_Zweighted.png", format="png")
+plt.savefig("../data/KGAP-LINCS_ROC_Zweighted.png", format="png")
 
 plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore")
 plt.title('KGAP-LINCS ROC vs DrugCentral PD Genes (MoA), Z-weighted')
-plt.savefig("KGAP-LINCS_ROC_ZweightedMoA.png", format="png")
-plt.show()
+plt.savefig("../data/KGAP-LINCS_ROC_ZweightedMoA.png", format="png")
+#plt.show()
 

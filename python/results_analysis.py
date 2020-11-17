@@ -15,13 +15,13 @@ from BioClients import pubchem as bc_pubchem
 
 logging.basicConfig(level=logging.INFO)
 
-results = pd.read_csv("results_zweighted.tsv", "\t")
+results = pd.read_csv("../data/results_zweighted.tsv", "\t")
 
 logging.info("results: {}x{}; {}".format(results.shape[0], results.shape[1], (','.join(list(results.columns)))))
 
 # Sort by score, keep top hits only.
 results = results.sort_values(by=['kgapScore'], ascending=[False])
-dcgenes = pd.read_csv("dcgenes.tsv", "\t")
+dcgenes = pd.read_csv("../data/dcgenes.tsv", "\t")
 dcgenes["dcgene"] = True
 results = pd.merge(results, dcgenes[["gene", "dcgene", "moa"]], how="left", left_on="geneSymbol", right_on="gene")
 N_hits = 2000
@@ -56,4 +56,4 @@ results.columns = ["ncbiGeneId", "geneSymbol", "kgapScore",
    "tcrdTargetTDL", "tcrdTroteinId", "UniprotId",
    "tinx_articles", "nds_rank", "tinx_importance", "tinx_novelty",
    "dcgene", "moa"]
-results.to_csv("results_tcrd.tsv", sep="\t", index=False)
+results.to_csv("../data/results_tcrd.tsv", sep="\t", index=False)
