@@ -1,0 +1,13 @@
+delete from instance where not exists (select pert_id from perturbagen where perturbagen.pert_id = instance.pert_id limit 1);
+delete from level5 where not exists (select sig_id from signature where level5.sig_id = signature.sig_id limit 1);
+alter table level5 add constraint level5_2_gene FOREIGN KEY (pr_gene_id) references gene(pr_gene_id) on delete cascade;
+alter table level5 add constraint level5_2_inst FOREIGN KEY (sig_id) references signature(sig_id) on delete cascade;
+insert into cell(cell_id,cell_type,cell_lineage,cell_histology,gender) values('SNUC4','cell line','large intestine','colorectal carcinoma','M');
+alter table signature add constraint sign_2_cell FOREIGN KEY (cell_id) references cell(cell_id) on delete cascade;
+delete from signature where not exists (select pert_id from perturbagen where perturbagen.pert_id = signature.pert_id limit 1);
+alter table signature add constraint sign_2_pert FOREIGN KEY (pert_id) references perturbagen(pert_id) on delete cascade;
+alter table perturbagen add column dc_id integer;
+alter table perturbagen add column is_parent boolean;
+insert into level5_lm select level5.* from level5,gene where level5.pr_gene_id=gene.pr_gene_id and gene.pr_is_lm=1;
+alter table level5_lm add constraint level5lm_2_gene FOREIGN KEY (pr_gene_id) references gene(pr_gene_id) on delete cascade;
+alter table level5_lm add constraint level5lm_2_inst FOREIGN KEY (sig_id) references signature(sig_id) on delete cascade;
