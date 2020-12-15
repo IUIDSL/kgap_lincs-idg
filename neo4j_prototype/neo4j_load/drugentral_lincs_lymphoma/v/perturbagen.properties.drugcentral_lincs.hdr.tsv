@@ -1,1 +1,0 @@
-id:ID(pert_id)	pert_iname:string	pert_type:string	inchi_key:string	canonical_smiles:string	dc_id:int	is_parent:boolean	source:string

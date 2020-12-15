@@ -15,11 +15,18 @@ fi
 # this returns before server is ready
 #    curl -i http://127.0.0.1:${PORT} 2>&1 | grep -c -e '200 OK' || break 
 
-end="$((SECONDS+600))"
-
 # try an actual query as test?
-docker exec -e NEO4J_USERNAME -e NEO4J_PASSWORD -t ${CONTAINER} \
+docker exec -t \
+  --env NEO4J_USERNAME=${NEO4J_USERNAME} \
+  --env NEO4J_PASSWORD=${NEO4J_PASSWORD} \
+  ${CONTAINER} \
   bash -c "until echo 'match (n) return count(n);' | bin/cypher-shell -a bolt://localhost:${PORT}; do echo $? ; sleep 1; done"
 
+retVal=$?
+if [ $retVal -ne 0 ]; then
+    echo "Error neo4j NOT online"
+else
+    echo "neo4j online!"
+fi
+exit $retVal
 
-echo 'neo4j online!'

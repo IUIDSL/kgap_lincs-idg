@@ -1,0 +1,217 @@
+#!/bin/bash
+#
+# Script for loading neo4j database 
+#
+# *** MAKE SURE YOU READ THIS SCRIPT BEFORE YOU RUN IT
+# *** script removes directories (clean up)
+#
+
+# this script requires environment variables set in shell
+# (for security reasons, these are not set in the script) 
+#
+# NEO4J_AUTH
+# NEO4J_USERNAME
+# NEO4J_PASSWORD
+#
+
+# configure build settings HERE
+#
+####################################################
+CONTAINER="dclneodb"
+DOCKER_IMAGE="neo4j:4.2.0"
+EPHEMERALCONTAINER="ephemeral-${CONTAINER}"
+
+NEO_DATA_PATH="."
+NEO_GRAPH_DIR="$HOME/neo4j/${CONTAINER}"
+NEO_DATA_SRC="${NEO_DATA_PATH}/"
+
+# neo4j port settings (ports must be free)
+NEO_HTTPS=7481 # default 7473
+NEO_HTTP=7482  # default 7474
+NEO_BOLT=7695  # default 7687
+
+# neo4j memory settings
+NEO4J_dbms_memory_heap_initial__size=23000m
+NEO4J_dbms_memory_heap_max__size=23000m
+NEO4J_dbms_memory_pagecache_size=26600m
+NEO4J_dbms_memory_off__heap_max__size=8192m
+NEO4J_dbms_jvm_additional=""
+
+NEO_PLUGINS='["apoc", "graph-data-science"]'
+
+####################################################
+
+echo "HOME: ${HOME}"
+echo "Neo4j DB Config:"
+echo "  NEO_HOST=${NEO_HOST}"
+echo "  NEO_HTTPS=${NEO_HTTPS}"
+echo "  NEO_HTTP=${NEO_HTTP}"
+echo "  NEO_BOLT=${NEO_BOLT}"
+echo "  NEO4J_dbms_memory_heap_initial__size=${NEO4J_dbms_memory_heap_initial__size}"
+echo "  NEO4J_dbms_memory_heap_max__size=${NEO4J_dbms_memory_heap_max__size}"
+echo "  NEO4J_dbms_memory_pagecache_size=${NEO4J_dbms_memory_pagecache_size}"
+echo "  NEO4J_dbms_memory_off__heap_max__size=${NEO4J_dbms_memory_off__heap_max__size}"
+echo "  NEO4J_dbms_jvm_additional=${NEO4J_dbms_jvm_additional}"
+echo "Neo4j storage:"
+echo "  NEO_DATA_SRC=${NEO_DATA_SRC}"
+echo "  NEO_GRAPH_DIR=${NEO_GRAPH_DIR}"
+
+read -p "Are the settings and directories correct? (type yes, to continue) "
+if [ "$REPLY" != "yes" ]; then
+   echo "Ok, I'm glad we checked the settings first!"
+   exit
+fi
+
+# bash error trap
+abort()
+{
+  local rv=$?
+  shift
+  [[ $rv ]] &&
+   ((rv != 0)) && {
+       echo "ERROR $@ ${rv} on line $(caller)"
+       exit "$rv"
+   }
+}
+
+#---------------------------------------------------------------
+#
+# to ensure there is no conflict, we proactively
+# shutdown this docker container and remove it
+#
+#---------------------------------------------------------------
+
+docker stop "${CONTAINER}"
+docker rm "${CONTAINER}"
+
+echo "rm -Rf ${NEO_GRAPH_DIR}/"
+read -p "removing directory as shown above, please double check, is this OK?! (type yes, to continue) "
+if [ "$REPLY" != "yes" ]; then
+   echo "Ok, I'm glad asked first!"
+   exit
+fi
+
+# cleanup old data? 
+rm -Rf "${NEO_GRAPH_DIR}/"
+
+echo "create directory structure required"
+mkdir -p -m 700  "${NEO_GRAPH_DIR}/data"
+mkdir -p -m 700  "${NEO_GRAPH_DIR}/import"
+
+echo "copy data files to import directory"
+cp -pr "${NEO_DATA_SRC}/e" "${NEO_GRAPH_DIR}/import/"
+cp -pr "${NEO_DATA_SRC}/v" "${NEO_GRAPH_DIR}/import/"
+
+echo "copy in post-load cypher scripts"
+cp "${NEO_DATA_PATH}/"*.cypher "${NEO_GRAPH_DIR}/import/"
+
+# run a bare bones ephemeral neo4j in a docker container
+# this is required to use neo4j-admin on our new database
+# because neo4j-admin import can not be used on a running neo4j
+#
+
+echo "stop/rm ${EPHEMERALCONTAINER} (if running)"
+docker stop ${EPHEMERALCONTAINER}
+docker rm ${EPHEMERALCONTAINER}
+
+echo "start ${EPHEMERALCONTAINER} neo4j"
+docker run \
+  --user "$(id -u):$(id -g)" \
+  --name "${EPHEMERALCONTAINER}" \
+  --detach \
+  --env NEO4J_AUTH="${NEO4J_AUTH}" \
+  --env NEO4J_dbms_connector_https_listen__address=0.0.0.0:${NEO_HTTPS} \
+  --env NEO4J_dbms_connector_http_listen__address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:${NEO_BOLT} \
+  --env NEO4J_dbms_default__listen__address=0.0.0.0 \
+  --env NEO4J_dbms_default__advertised__address=${NEO_HOST} \
+  --env NEO4J_dbms_connector_https_advertised__address=${NEO_HOST}:${NEO_HTTPS} \
+  --env NEO4J_dbms_connector_http_advertised__address=${NEO_HOST}:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_advertised__address=${NEO_HOST}:${NEO_BOLT} \
+  --volume ${NEO_GRAPH_DIR}/data:/data \
+  --volume ${NEO_GRAPH_DIR}/import:/import \
+  --env NEO4J_dbms_memory_heap_initial__size=${NEO4J_dbms_memory_heap_initial__size} \
+  --env NEO4J_dbms_memory_heap_max__size=${NEO4J_dbms_memory_heap_max__size} \
+  --env NEO4J_dbms_memory_pagecache_size=${NEO4J_dbms_memory_pagecache_size} \
+   ${DOCKER_IMAGE} 
+
+abort $? "create ephemeral"
+
+# wait for ephemeral neo4j to go fully online before proceeding
+# note: ephemeral is always on the default port
+./wait4bolt_outside ${EPHEMERALCONTAINER} ${NEO_BOLT} 
+
+abort $? "ephemeral online"
+
+echo "Bulk load all tsv files"
+docker exec -t \
+   ${EPHEMERALCONTAINER} bin/neo4j-admin import \
+  --database="${CONTAINER}" \
+  --verbose \
+  --skip-bad-relationships=true \
+  --skip-duplicate-nodes=true \
+  --ignore-empty-strings=true \
+  --normalize-types=true \
+  --trim-strings=false \
+  --delimiter "\t" \
+  --high-io=true \
+  --report-file=importreport.txt \
+  --nodes=Cell="/import/v/cell.properties.drugcentral_lincs.hdr.tsv,/import/v/cell.properties.drugcentral_lincs.tsv.gz" \
+  --nodes=Gene="/import/v/gene.properties.drugcentral_lincs.hdr.tsv,/import/v/gene.properties.drugcentral_lincs.tsv.gz" \
+  --nodes=Signature="/import/v/signature.properties.drugcentral_lincs.hdr.tsv,/import/v/signature.properties.drugcentral_lincs.tsv.gz" \
+  --nodes=Drug="/import/v/drug.properties.drugcentral_lincs.hdr.tsv,/import/v/drug.properties.drugcentral_lincs.tsv.gz" \
+  --nodes=Concept="/import/v/concept.properties.drugcentral.hdr.tsv,/import/v/concept.properties.drugcentral.tsv.gz" \
+  --relationships=CELL_SIGNATURE="/import/e/cell.signature.cellsignature.drugcentral_lincs.hdr.tsv,/import/e/cell.signature.cellsignature.drugcentral_lincs.tsv.gz" \
+  --relationships=DRUG_SIGNATURE="/import/e/drug.signature.drugsignature.drugcentral_lincs.hdr.tsv,/import/e/drug.signature.drugsignature.drugcentral_lincs.tsv.gz" \
+  --relationships=SIGNATURE_GENE="/import/e/signature.gene.signaturegene.drugcentral_lincs.hdr.tsv,/import/e/signature.gene.signaturegene.drugcentral_lincs.tsv.gz" \
+  --relationships=INDICATION="/import/e/drug.concept.indication.drugcentral.hdr.tsv,/import/e/drug.concept.indication.drugcentral.tsv.gz"
+
+abort $? "load graph"
+
+echo "grab the error log, before we drop ephemeral"
+docker exec -t ${EPHEMERALCONTAINER} bash -c "cp /var/lib/neo4j/importreport.txt /import/"
+
+abort $? "grab importreport.txt"
+
+echo "dropping ${EPHEMERALCONTAINER} neo4j"
+docker stop ${EPHEMERALCONTAINER}
+docker rm ${EPHEMERALCONTAINER}
+
+#
+# now start up neo4j and use the database we just created 
+#
+echo "starting neo4j"
+docker run \
+  --user $(id -u):$(id -g) \
+  --name "${CONTAINER}" \
+  --detach \
+  --restart unless-stopped \
+  --publish ${NEO_HTTPS}:${NEO_HTTPS} \
+  --publish ${NEO_HTTP}:${NEO_HTTP} \
+  --publish ${NEO_BOLT}:${NEO_BOLT} \
+  --env NEO4J_dbms_connector_https_listen__address=0.0.0.0:${NEO_HTTPS} \
+  --env NEO4J_dbms_connector_http_listen__address=0.0.0.0:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_listen__address=0.0.0.0:${NEO_BOLT} \
+  --env NEO4J_dbms_connector_https_advertised__address=${NEO_HOST}:${NEO_HTTPS} \
+  --env NEO4J_dbms_connector_http_advertised__address=${NEO_HOST}:${NEO_HTTP} \
+  --env NEO4J_dbms_connector_bolt_advertised__address=${NEO_HOST}:${NEO_BOLT} \
+  --volume ${NEO_GRAPH_DIR}/data:/data \
+  --volume ${NEO_GRAPH_DIR}/import:/import \
+  --env NEO4JLABS_PLUGINS="${NEO_PLUGINS}" \
+  --env NEO4J_dbms_default__database="${CONTAINER}" \
+  --env NEO4J_apoc_import_file_enabled=true \
+  --env NEO4J_dbms_memory_heap_initial__size=${NEO4J_dbms_memory_heap_initial__size} \
+  --env NEO4J_dbms_memory_heap_max__size=${NEO4J_dbms_memory_heap_max__size} \
+  --env NEO4J_dbms_memory_pagecache_size=${NEO4J_dbms_memory_pagecache_size} \
+  --env NEO4J_dbms_memory_off__heap_max__size=${NEO4J_dbms_memory_off__heap_max__size} \
+  --env NEO4J_dbms_jvm_additional=${NEO4J_dbms_jvm_additional} \
+   "${DOCKER_IMAGE}" 
+
+abort $? "start graph"
+
+# wait for neo4j, on correct port! 
+./wait4bolt_outside ${CONTAINER} ${NEO_BOLT} 
+
+echo "CREATE Indexes"
+docker exec -e NEO4J_USERNAME -e NEO4J_PASSWORD -t ${CONTAINER} bash -c "bin/cypher-shell -a bolt://localhost:${NEO_BOLT} --format verbose --debug </import/indexes.cypher"
+
