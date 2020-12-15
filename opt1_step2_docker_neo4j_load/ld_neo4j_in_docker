@@ -26,9 +26,9 @@ NEO_GRAPH_DIR="$HOME/neo4j/${CONTAINER}"
 NEO_DATA_SRC="${NEO_DATA_PATH}/"
 
 # neo4j port settings (ports must be free)
-NEO_HTTPS=7481 # default 7473
-NEO_HTTP=7482  # default 7474
-NEO_BOLT=7695  # default 7687
+NEO_HTTPS=7473 # e.g. 7481 default 7473
+NEO_HTTP=7474  # e.g. 7482 default 7474
+NEO_BOLT=7687  # e.g. 7695 default 7687
 
 # neo4j memory settings
 NEO4J_dbms_memory_heap_initial__size=23000m
