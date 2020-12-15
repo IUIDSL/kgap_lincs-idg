@@ -31,11 +31,11 @@ NEO_HTTP=7474  # e.g. 7482 default 7474
 NEO_BOLT=7687  # e.g. 7695 default 7687
 
 # neo4j memory settings
-NEO4J_dbms_memory_heap_initial__size=23000m
-NEO4J_dbms_memory_heap_max__size=23000m
-NEO4J_dbms_memory_pagecache_size=26600m
-NEO4J_dbms_memory_off__heap_max__size=8192m
-NEO4J_dbms_jvm_additional=""
+NEO4J_dbms_memory_heap_initial__size=5900m
+NEO4J_dbms_memory_heap_max__size=5900m
+NEO4J_dbms_memory_pagecache_size=3300m
+NEO4J_dbms_memory_off__heap_max__size=4600m
+NEO4J_dbms_jvm_additional="-XX:+ExitOnOutOfMemoryError"
 
 NEO_PLUGINS='["apoc", "graph-data-science"]'
 
