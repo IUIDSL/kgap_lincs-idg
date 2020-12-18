@@ -7,5 +7,4 @@
 
 `bin/neo4j-admin load --from=pathtofile/dclneodb.dump --database=neo4j`
 
-exit terminal and start the database
-connect and use database
+exit terminal, start the database
