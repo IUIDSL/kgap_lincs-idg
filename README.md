@@ -19,14 +19,15 @@ Jessica L Binder, Robin McEntire, Kyle Stirling, Ying Ding and David J Wild.
 ## Graph database
 
 ### Dependencies for fast path
-- Neo4j Version 4.2 (plugin version automatically determined by Neo4j version)
+- Neo4j Desktop Version 4.2 or newer (select version 4.2 when creating database, and plugin versions are automatically determined by Neo4j version)
 - 8GB+ ram
 - 5GB+ free disk space
-- datasets listed
+- datasets listed below
 
 ### additional dependencies for long path
-- Knime Version 4.3 (will notify for automatic download any nodes required but not yet installed)
+- Knime Version 4.3 (Knime will notify for automatic download any nodes required but not yet installed)
 - ability to run, load from dump and host temporarily Postgres 10.11 database
+- Docker version 20.10.1 or newer, if running the example script
 
 ### The fast path
 Note: These steps should work with little or no modifications on Macintosh, Unix, and Windows. Process was tested on a MacBookPro 2017 running MacOS Catalina
