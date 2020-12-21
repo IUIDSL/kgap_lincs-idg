@@ -1,5 +1,5 @@
 
-# Neo4j Client
+# Load dump file in Neo4j Desktop
 
 1. create a new 4.2 database (do not start the database)
 2. click on the ... and click **Manage** in the pop up menu, click on **Open Terminal**
