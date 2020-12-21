@@ -25,7 +25,7 @@ To restore this graph database from a dump file download
 this [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump),
 install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and launch it.  
 Create a new 4.2 database (do not start the database).  Now click on the *...* and then click *Manage* in the pop up menu, and then click on *Open Terminal*. 
-Now to restore the database from the dump file use the command (change pathtofile accordingly first)
+Now to restore the database from the dump file use the command (change *pathtofile* accordingly first)
 ```
   bin/neo4j-admin load --from=pathtofile/dclneodb.dump --database=neo4j
 ```
