@@ -9,3 +9,5 @@
 
 4. exit terminal, click **Start** the database
 5. click **Open**, to use built in neo4j browser to query and explore
+
+Note: instructions tested on MacBookPro 2017 - MacOS Catalina
