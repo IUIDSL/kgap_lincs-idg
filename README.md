@@ -24,12 +24,11 @@ Note: These steps should work with little or no modifications on Macintosh, Unix
 To restore this graph database from a dump file download
 this [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump),
 install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and launch it.  
-Create a new 4.2 database (do not start the database)
-click on the ... and click Manage in the pop up menu, click on Open Terminal
-restore the database from dump file with command
+Create a new 4.2 database (do not start the database).  Now click on the *...* and then click *Manage* in the pop up menu, and then click on *Open Terminal*. 
+Now to restore the database from the dump file use the command (change pathtofile accordingly first)
     bin/neo4j-admin load --from=pathtofile/dclneodb.dump --database=neo4j
-exit terminal, click Start the database
-click Open, to use built in neo4j browser to query and explore
+now exit the terminal, click *Start* to start the database
+Now click *Open* to use built in neo4j browser to query and explore the database
 Note: These instructions were tested on a MacBookPro 2017 - MacOS Catalina
 
 ### The long path (and more technical), to recreate the graph database from scratch
