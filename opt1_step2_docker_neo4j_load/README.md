@@ -1,6 +1,6 @@
 ## Example script to load the relationships and nodes into Neo4j server running in docker
 
-READ the ```ld_neo4j_in_docker``` script before running it.  This script contains a **rm -Rf path** cleanup so you really do need to make sure your paths are correct! Scripts assume this repository is cloned to your home directory ~ and the neo4j database will be placed under ~/neo4j/ as well
+Carefully READ through the entire ```ld_neo4j_in_docker``` script before running it.  It is designed to be run, and rerun, therefore it contains an **rm -Rf path** cleanup command, so you really do need to make sure your paths are correct! Scripts assume this repository is cloned to your home directory ~ and the neo4j database will be placed under ~/neo4j/ as well
 
 ```ld_neo4j_in_docker``` script requires environment variables set in shell
 (for security reasons, these are not set in the script) 
