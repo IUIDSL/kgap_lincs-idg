@@ -36,4 +36,4 @@ Note: Process developed on Ubuntu 20.04, and tested on MacbookPro 2017 Catalina
 - Download the file [tcrd_targets.tsv](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt1_step1_create_neo4j_input_files/tcrd_targets.tsv) either directly or if you cloned this repository, you will have a copy already.
 - Download and install [Knime](https://www.knime.com/) Note: The workflow was created with version 4.3
 - import the knime workflow [kgap_lincs-idg/opt1_step1_create_neo4j_files](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt1_step1_create_neo4j_input_files/drugcentral_lincs_etl2neo4jfiles.knwf)
-- Find the L1000 PostgresSQL Connector ![image of PostgresSQL connector](master/doc/images/L1000-knime-PosgresSQLConnector.png) and change the address/port to point to the drugcentral_lincs database you restored above
+- Find the L1000 PostgresSQL Connector ![image of PostgresSQL connector](doc/images/L1000-knime-PosgresSQLConnector.png) and change the address/port to point to the drugcentral_lincs database you restored above
