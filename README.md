@@ -26,7 +26,9 @@ this [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dcl
 install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and launch it.  
 Create a new 4.2 database (do not start the database).  Now click on the *...* and then click *Manage* in the pop up menu, and then click on *Open Terminal*. 
 Now to restore the database from the dump file use the command (change pathtofile accordingly first)
-    bin/neo4j-admin load --from=pathtofile/dclneodb.dump --database=neo4j
+```
+  bin/neo4j-admin load --from=pathtofile/dclneodb.dump --database=neo4j
+```
 now exit the terminal, click *Start* to start the database
 Now click *Open* to use built in neo4j browser to query and explore the database
 Note: These instructions were tested on a MacBookPro 2017 - MacOS Catalina
