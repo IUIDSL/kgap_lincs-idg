@@ -35,7 +35,6 @@ Note: Process developed on Ubuntu 20.04, and tested on MacbookPro 2017 Catalina
 - Download, restore and bring online [drugcentral_lincs](http://cheminfov.informatics.indiana.edu/projects/kgap/data/drugcentral_lincs.pgdump)
 - Download the file [tcrd_targets.tsv](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt1_step1_create_neo4j_input_files/tcrd_targets.tsv) either directly or if you cloned this repository, you will have a copy already.
 - Download and install [Knime](https://www.knime.com/) Note: The workflow was created with version 4.3
-- import the knime workflow [kgap_lincs-idg/opt1_step1_create_neo4j_files](opt1_step1_create_neo4j_input_files/drugcentral_lincs_etl2neo4jfiles.knwf), you will see and safely ignore this dialog message 
-<BR>![knime workflow load message](doc/images/drugcentral_lincs-PostgresSQLConnector.png)<BR>
-- Find the L1000 PostgresSQL Connector ![image of PostgresSQL connector](doc/images/knime-workflow-load-message.png) and change the address/port to point to the drugcentral_lincs database you restored above
+- import the knime workflow [kgap_lincs-idg/opt1_step1_create_neo4j_files](opt1_step1_create_neo4j_input_files/drugcentral_lincs_etl2neo4jfiles.knwf), you will see and safely ignore this dialog message ![knime workflow load message](doc/images/knime-workflow-load-message.png)
+- Find the L1000 PostgresSQL Connector ![image of PostgresSQL connector](doc/images/drugcentral_lincs-PostgresSQLConnector.png) and change the address/port to point to the drugcentral_lincs database you restored above
 
