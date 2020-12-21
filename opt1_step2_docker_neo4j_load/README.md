@@ -1,5 +1,8 @@
 ## Example script to load the relationships and nodes into Neo4j server running in docker
 
+ASSUMPTIONS: this project is Cloned to ~ home directory, and Docker is already installed.
+Testing notes: developed on Ubuntu 20.04, and tested on MacbookPro 2017 running MacOS Catalina
+
 Carefully READ through the entire ```ld_neo4j_in_docker``` script before running it.  It is designed to be run, and rerun, therefore it contains an **rm -Rf path** cleanup command, so you really do need to make sure your paths are correct! Scripts assume this repository is cloned to your home directory ~ and the neo4j database will be placed under ~/neo4j/ as well.  Process tested with Neo4j community version 4.2.0, and relies on the Neo4j Plugins apoc and graph data science library.  This script directs the docker image to retrieve the correct plugin versions for the specified release of Neo4j. (automatic)
 
 ```ld_neo4j_in_docker``` script requires environment variables set in shell
