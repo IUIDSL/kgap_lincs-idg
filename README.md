@@ -18,7 +18,19 @@ Jessica L Binder, Robin McEntire, Kyle Stirling, Ying Ding and David J Wild.
 
 ## Graph database
 
-The quickest way to bring a copy of this graph database online is
-to download and install the Neo4j Desktop Client [Neo4j](https://neo4j.com/)
-and then restore the [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump) 
-following these [instructions](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt2_load_neo4j_dump/Neo4jDesktop.md)
+### The fast path
+Note: These steps should work with little or no modifications on Macintosh, Unix, and Windows. Process tested on MacBookPro 2017 Catalina
+To simply restore this graph database from a dump file download
+the [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump)
+and install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) then 
+follow these [instructions](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt2_load_neo4j_dump/Neo4jDesktop.md)
+to restore the database dump.  
+
+### The long path (and more technical), to recreate the graph database from scratch
+#### Step 1: create node and relationship files 
+Note: these steps assume you 
+- clone this repository in your home directory
+- Download and bring the [drugcentral_lincs](http://cheminfov.informatics.indiana.edu/projects/kgap/data/drugcentral_lincs.pgdump) database online.
+- Download the file [tcrd_targets.tsv](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt1_step1_create_neo4j_input_files/tcrd_targets.tsv) either directly or if you cloned this repository, you will have a copy already.
+- Download and install [Knime](https://www.knime.com/) Note: The workflow was created with version 4.3
+- 
