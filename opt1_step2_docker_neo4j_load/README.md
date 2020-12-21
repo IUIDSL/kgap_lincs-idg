@@ -1,4 +1,4 @@
-## Example script to load the relationships and nodes into Neo4j server running in docker
+## Example script to load the relationships and nodes into Neo4j community server running in docker
 
 ASSUMPTIONS: this project is Cloned to ~ home directory, and Docker is already installed.
 <BR>Testing notes: developed on Ubuntu 20.04, and tested on MacbookPro 2017 running MacOS Catalina
