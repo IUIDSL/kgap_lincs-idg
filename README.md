@@ -31,7 +31,7 @@ Now to restore the database from the dump file use the command (change pathtofil
 ```
 now exit the terminal, click *Start* to start the database
 Now click *Open* to use built in neo4j browser to query and explore the database
-Note: These instructions were tested on a MacBookPro 2017 - MacOS Catalina
+<BR>Note: These instructions were tested on a MacBookPro 2017 - MacOS Catalina
 
 ### The long path (and more technical), to recreate the graph database from scratch
 #### Step 1: create node and relationship files 
