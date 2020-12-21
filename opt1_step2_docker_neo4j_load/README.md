@@ -9,6 +9,7 @@ Carefully READ through the entire ```ld_neo4j_in_docker``` script before running
     NEO4J_USERNAME
     NEO4J_PASSWORD
 
+Note: NEO4J_AUTH is a combination of a username and password (e.g. it could be ```export NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}```)
 
 - ```ld_neo4j_in_docker``` to load the neo4j community server in docker
 - ```wait4bolt_outside``` used by ld_neo4j_in_docker to wait for neo4j db to come online (e.g. must be online to run cypher scripts to create indexes)
