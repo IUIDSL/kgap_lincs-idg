@@ -2,12 +2,12 @@
 
 READ the ```ld_neo4j_in_docker``` script before running it.  This script contains a **rm -Rf path** cleanup so you really do need to make sure your paths are correct! Scripts assume this repository is cloned to your home directory ~ and the neo4j database will be placed under ~/neo4j/ as well
 
-### ```ld_neo4j_in_docker``` script requires environment variables set in shell
-### (for security reasons, these are not set in the script) 
-###
-### NEO4J_AUTH
-### NEO4J_USERNAME
-### NEO4J_PASSWORD
+```ld_neo4j_in_docker``` script requires environment variables set in shell
+(for security reasons, these are not set in the script) 
+
+    NEO4J_AUTH
+    NEO4J_USERNAME
+    NEO4J_PASSWORD
 
 
 - ```ld_neo4j_in_docker``` to load the neo4j community server in docker
