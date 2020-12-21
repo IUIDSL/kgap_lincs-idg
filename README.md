@@ -32,7 +32,7 @@ Now to restore the database from the dump file use the command (change *pathtofi
 now exit the terminal, click *Start* to start the database
 Now click *Open* to use built in neo4j browser to query and explore the database
 
-### The long path (and more technical), to recreate the graph database from scratch
+### The long path (and more technical), to recreate the graph database from source datasets
 #### Step 1: create node and relationship files 
 Note: Developed and used on Ubuntu 20.04, and then these directions were tested on a MacbookPro 2017 running MacOS Catalina 
 
