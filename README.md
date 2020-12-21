@@ -21,11 +21,11 @@ Jessica L Binder, Robin McEntire, Kyle Stirling, Ying Ding and David J Wild.
 ### The fast path
 Note: These steps should work with little or no modifications on Macintosh, Unix, and Windows. Process tested on MacBookPro 2017 Catalina
 
-To simply restore this graph database from a dump file download
-the [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump)
-and install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) then 
+To restore this graph database from a dump file download
+this [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump),
+install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and then 
 follow these [instructions](https://github.com/IUIDSL/kgap_lincs-idg/blob/master/opt2_load_neo4j_dump/Neo4jDesktop.md)
-to restore the database dump.  
+to restore the database dump.
 
 ### The long path (and more technical), to recreate the graph database from scratch
 #### Step 1: create node and relationship files 
