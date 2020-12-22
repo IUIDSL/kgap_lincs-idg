@@ -160,7 +160,7 @@ WITH g, {} AS score
 RETURN g.id, g.name, score
 ORDER BY score DESC
 """.format(cid_list, score_attribute)
-  logging.debug("CQL: {}".format(cql))
+  logging.info("CQL: {}".format(cql))
   cdf = cypher2df(cql)
   cdf.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
   return cdf
@@ -172,7 +172,7 @@ if __name__=="__main__":
   NEO4J_URI = "neo4j://hoffmann.data2discovery.net:7695"
   NEO4J_PARAMFILE = os.environ["HOME"]+"/.neo4j.sh"
   #INDICATION_QUERY = "Parkinson"; ATC_QUERY = 'NERVOUS SYSTEM';
-  parser = argparse.ArgumentParser(description='KGAP LINCS-IDG ROC analysis')
+  parser = argparse.ArgumentParser(description='KGAP LINCS-IDG search and ROC analysis')
   parser.add_argument("--indication_query", required=True, help="DrugCentral indication query")
   parser.add_argument("--atc_query", help="DrugCentral ATC L1 query")
   parser.add_argument("--odir", default=".", help="output dir")
@@ -209,7 +209,7 @@ if __name__=="__main__":
   ###
   session = Neo4jConnect(NEO4J_URI, args.neo4j_paramfile)
 
-  cid_list = list(dcdrugs.pubchem_cid.array.astype('int'))
+  cid_list = sorted(list(dcdrugs.pubchem_cid.array.astype('int')))
 
   ###
   # Degree-weighted:
