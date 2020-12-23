@@ -8,7 +8,7 @@ with the IDSL __PRIDE__ initiative (Parkinson's Research through Integrative Dat
 
 See also:
 
-* [KGAP Project Homepage](http://cheminfov.informatics.indiana.edu/projects/kgap/)
+* [KGAP Project Homepage](https://cheminfov.informatics.indiana.edu/projects/kgap/)
 
 _Publication  (in preparation)_: "Knowledge graph analytic platform with LINCS and IDG for Parkinson's disease target illumination", by Jeremy Yang, Christopher Gessner, Joel Duerksen, Daniel Biber, Jessica Binder, Brian Foote, Robin McEntire, Kyle Stirling, Ying Ding and David Wild.
 
@@ -28,7 +28,7 @@ _Publication  (in preparation)_: "Knowledge graph analytic platform with LINCS a
 ### Fast path
 Note: These steps should work with little or no modifications on Macintosh, Unix, and Windows. Process was tested on a MacBookPro 2017 running MacOS Catalina
 
-To restore this graph database from a dump file download this [dump file](http://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump),
+To restore this graph database from a dump file download this [dump file](https://cheminfov.informatics.indiana.edu/projects/kgap/data/dclneodb.dump),
 install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and launch it. Create a new 4.2 database (do not start the database).  Click on the *...* and then click *Manage* in the pop up menu, and then click on *Open Terminal*. Restore the database from the dump file with the command, changing `PATHTOFILE` as needed.
 
 ```
@@ -43,7 +43,7 @@ Next exit the terminal and click *Start* to start the database. Click *Open* to 
 _Note: Developed and used on Ubuntu 20.04, and then these directions were tested on a MacbookPro 2017 running MacOS Catalina._
 
 - Clone this repository in your home directory, the following process assumes ~/kgap_lincs-idg/ exists and is populated
-- Download, restore and bring online [drugcentral_lincs](http://cheminfov.informatics.indiana.edu/projects/kgap/data/drugcentral_lincs.pgdump)
+- Download, restore and bring online [drugcentral_lincs](https://cheminfov.informatics.indiana.edu/projects/kgap/data/drugcentral_lincs.pgdump)
 - Download and install [Knime](https://www.knime.com/) Note: The workflow was created with version 4.3
 - <img align="right" height="100" src="doc/images/knime-workflow-load-message.png">Import the knime workflow [kgap_lincs-idg/opt1_step1_create_neo4j_files](opt1_step1_create_neo4j_input_files/drugcentral_lincs_etl2neo4jfiles.knwf), you will see and safely ignore this dialog message.<BR clear="right">
 - <img align="right" src="doc/images/DrugCentral%202021.png">This workflow extracts and transforms data from three datasets, the file [tcrd_targets.tsv](opt1_step1_create_neo4j_input_files/tcrd_targets.tsv) in this repository, the online DrugCentral database, and the drugcentral_lincs database (loaded above).<br clear="right">
