@@ -3,13 +3,13 @@
 library(RJDBC)
 library(data.table)
 
-out.fn <- paste0(Sys.getenv("HOME"), "/Documents/dbase/lincs/dcmap.sql")
+out.fn <- "dcmap.sql"
 
 cat("update perturbagen set dc_id = null, is_parent = null;", file = out.fn, sep = "\n")
 
 drv <-
 JDBC("org.apache.derby.jdbc.EmbeddedDriver",paste0(Sys.getenv("HOME"), "/app/db-derby-10.14.1.0-bin/lib/derby.jar"), identifier.quote="\"")
-conn <- dbConnect(drv, paste0("jdbc:derby:", Sys.getenv("HOME"), "/Documents/dbase/drugdb/.config/localdb/db"))
+conn <- dbConnect(drv, paste0("jdbc:derby:", Sys.getenv("HOME"), "/../data/DrugCentral/drugdb/.config/localdb/db"))
 drug.names <- dbGetQuery(conn, "select id,name,parent_id from synonyms")
 setDT(drug.names)
 drug.inchi <- dbGetQuery(conn, "select id,inchikey from structures where inchikey is not null")

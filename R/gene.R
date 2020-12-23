@@ -21,4 +21,4 @@ for(fn in args) {
 }
 
 genes <- unique(genes, by = "pr_gene_id")
-fwrite(genes, paste0(Sys.getenv("HOME"), "/Documents/dbase/lincs/genes.tsv"), sep = "\t", col.names = T, row.names = F, quote = T, na = "NA")
+fwrite(genes, "genes.tsv"), sep = "\t", col.names = T, row.names = F, quote = T, na = "NA")

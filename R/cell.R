@@ -4,7 +4,7 @@ library(data.table)
 
 cells <- data.table()
 
-fn <- paste0(Sys.getenv("HOME"), "/Documents/dbase/lincs/GSE70138/GSE70138_Broad_LINCS_cell_info_2017-04-28.txt.gz")
+fn <- paste0(Sys.getenv("HOME"), "/../data/LINCS/data/GSE70138/GSE70138_Broad_LINCS_cell_info_2017-04-28.txt.gz")
 
 GSE70138 <- fread(paste0("gunzip -c ", fn), header = T, sep = "\t", quote = "", na.strings = "-666")
 
@@ -16,7 +16,7 @@ setnames(GSE70138, "original_source_vendor", "cell_source")
 
 GSE70138 <- GSE70138[, .(cell_id, cell_type, cell_lineage, cell_histology, cell_source_id, cell_source, gender)]
 
-fn <- paste0(Sys.getenv("HOME"), "/Documents/dbase/lincs/GSE70138/GSE70138_Broad_LINCS_cell_info_2017-04-28.txt.gz")
+fn <- paste0(Sys.getenv("HOME"), "/../data/LINCS/data/GSE70138/GSE70138_Broad_LINCS_cell_info_2017-04-28.txt.gz")
 
 GSE92742 <- fread(paste0("gunzip -c ", fn), header = T, sep = "\t", quote = "", na.strings = "-666")
 
@@ -32,4 +32,4 @@ cells <- rbindlist(list(GSE70138, GSE92742), use.names = T, fill = T)
 
 cells <- unique(cells, by = "cell_id")
 
-fwrite(cells, paste0(Sys.getenv("HOME"), "/Documents/dbase/lincs/cells.tsv"), sep = "\t", col.names = T, row.names = F, quote = T, na = "NA")
+fwrite(cells, "cells.tsv"), sep = "\t", col.names = T, row.names = F, quote = T, na = "NA")
