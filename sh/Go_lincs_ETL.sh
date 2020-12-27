@@ -16,23 +16,23 @@ ${cwd}/l1ktools/R/cmap/gctx2list.R \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.list.txt
 ###
 # Custom code:
-${cwd}/R/gene.R \
+${cwd}/python/gene.py \
 	$SRCDATADIR/GSE70138/GSE70138_Broad_LINCS_gene_info_2017-03-06.txt.gz \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_gene_info.txt.gz \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_gene_info_delta_landmark.txt.gz
 #
-${cwd}/R/cell.R \
+${cwd}/python/cell.py \
 	$SRCDATADIR/GSE70138/GSE70138_Broad_LINCS_cell_info_2017-04-28.txt.gz \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_cell_info.txt.gz \
 	$DATADIR/cells.tsv
 #
-${cwd}/R/perturbagen.R \
+${cwd}/python/perturbagen.py \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_pert_info.txt.gz \
 	$SRCDATADIR/GSE70138/GSE70138_Broad_LINCS_pert_info_2017-03-06.txt.gz \
 	$SRCDATADIR/GSE70138/GSE70138_Broad_LINCS_pert_info.txt.gz \
 	$DATADIR/perturbagen.tsv
 #
-${cwd}/R/signature.R
+${cwd}/python/signature.py \
 	$SRCDATADIR/GSE70138/GSE70138_Broad_LINCS_sig_info_2017-03-06.txt.gz \
 	$SRCDATADIR/GSE92742/GSE92742_Broad_LINCS_sig_info.txt.gz \
 	$DATADIR/signature.tsv
@@ -45,7 +45,8 @@ psql lincs <${cwd}/sql/lincs/tables.sql
 psql lincs <${cwd}/sql/lincs/import.sql
 psql lincs <${cwd}/sql/lincs/postimp.sql
 #
-# dcmap.sql output from gen.dcmap.R.
-#psql lincs < ~/Documents/dbase/lincs/dcmap.sql
-psql lincs < ${cwd}/sql/lincs/dcmap.sql
+###
+# Map drugs by structure.
+${cwd}/python/dcmap.py ${DATADIR}/dcmap.sql
+psql lincs< ${DATADIR}/dcmap.sql
 #
