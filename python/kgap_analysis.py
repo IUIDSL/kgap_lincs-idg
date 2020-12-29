@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-See also notebook.
+Client for KGAP_LINCS-IDG drug target illumination method, as applied to 
+Parkinson's disease.
 """
 import sys,os,re,logging,argparse
 import pandas as pd, pandas.io.sql
@@ -25,19 +26,19 @@ def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", scor
     """From query results and a validation geneset, plot ROC curve with AUC."""
     vga = np.array(results[gene_tag_r].isin(valgenes[gene_tag_v]).astype(np.int8))
     fpr, tpr, thresholds = roc_curve(vga, np.array(results[score_tag]))
-    logging.info("ROC points (fpr, tpr, thresholds): ({}, {}, {})".format(len(fpr), len(tpr), len(thresholds)))
-    logging.info("ROC thresholds: range: [{:.2f}, {:.2f}], mean:{:.2f}; median:{:.2f}".format(min(thresholds), max(thresholds), np.mean(thresholds), np.median(thresholds)))
+    logging.info(f"ROC points (fpr, tpr, thresholds): ({len(fpr)}, {len(tpr)}, {len(thresholds)})")
+    logging.info(f"ROC thresholds: range: [{min(thresholds):.2f}, {max(thresholds):.2f}], mean:{np.mean(thresholds):.2f}; median:{np.median(thresholds):.2f}")
     aucval = roc_auc_score(vga, np.array(results[score_tag]))
-    logging.info("AUC: {:0.2f}; results: {}; positives: {}".format(aucval, results.shape[0], len(tpr)))
+    logging.info(f"AUC: {aucval:0.2f}; results: {results.shape[0]}; positives: {len(tpr)}")
     plt.figure(figsize=(7,5), dpi=100)
-    plt.plot(fpr, tpr, color='darkorange', lw=2, linestyle="-", label = 'ROC curve')
-    plt.annotate("AUC: {:0.2f}\nresults: {}\npositives: {}".format(aucval, results.shape[0], len(tpr)), xy=(.8, .4), xycoords="axes fraction")
+    plt.plot(fpr, tpr, color='darkorange', lw=2, linestyle="-", label='ROC curve')
+    plt.annotate(f"AUC: {aucval:0.2f}\nresults: {results.shape[0]}\npositives: {len(tpr)}", xy=(.8, .4), xycoords="axes fraction")
     plt.plot([0,1], [0,1], color ='lightgray', lw=1, linestyle='--')
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate (recall)')
     if show_precision:
       prec = [precision_score(vga, results[score_tag]>=t, zero_division=0) for t in thresholds]
-      plt.plot(fpr, prec, color='cyan', lw=1, linestyle="-.", label='Precision (max={:.3f})'.format(max(prec)))
+      plt.plot(fpr, prec, color='cyan', lw=1, linestyle="-.", label=f"Precision (max={max(prec):.3f})")
     if show_recall:
       recl = [recall_score(vga, results[score_tag]>=t) for t in thresholds]
       plt.plot(fpr, recl, color='green', lw=1, linestyle=":", label='Recall')
@@ -46,7 +47,7 @@ def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", scor
       plt.plot(fpr, acc, color='gray', lw=1, label='Accuracy')
     if show_mcc:
       mccs = [matthews_corrcoef(vga, results[score_tag]>=t) for t in thresholds]
-      plt.plot(fpr, mccs, color='darkgray', lw=1, label='MCC (max={:.3f})'.format(max(mccs)))
+      plt.plot(fpr, mccs, color='darkgray', lw=1, label=f"MCC (max={max(mccs):.3f})")
     plt.legend(loc="lower right")
     plt.title(title)
     return(plt)
@@ -62,7 +63,7 @@ def DrugCentralConnect(dbhost ,dbport, dbname, dbusr, dbpw):
 ###
 def GetIndication2Drugs(indication_query, atc_query):
   """Query DrugCentral from indication for drugs."""
-  sql = """\
+  sql = f"""\
 SELECT DISTINCT
 	ids.identifier AS pubchem_cid,
 	s.id,
@@ -85,18 +86,18 @@ LEFT JOIN
 WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND omop.relationship_name = 'indication'
-	AND omop.concept_name ~* '{}'
-""".format(indication_query)
-  if atc_query: sql += """ AND atc.l1_name ~* '{}'""".format(atc_query)
+	AND omop.concept_name ~* '{indication_query}'
+"""
+  if atc_query: sql += f" AND atc.l1_name ~* '{atc_query}'"
   logging.info(sql)
   dcdrugs = pandas.io.sql.read_sql_query(sql, dbcon)
-  logging.debug("rows,cols: {},{}".format(dcdrugs.shape[0], dcdrugs.shape[1]))
+  logging.debug(f"rows,cols: {dcdrugs.shape[0]},{dcdrugs.shape[1]}")
   return dcdrugs
 
 ###
 def GetIndication2Genes(indication_query, atc_query):
   """Query DrugCentral from indication for genes."""
-  sql="""\
+  sql = f"""\
 SELECT DISTINCT
 	atf.target_name,
 	atf.gene genes,
@@ -114,21 +115,21 @@ LEFT JOIN
 WHERE
 	atf.gene IS NOT NULL
 	AND omop.relationship_name = 'indication'
-	AND omop.concept_name ~* '{}'
-""".format(indication_query)
-  if atc_query: sql += """ AND atc.l1_name ~* '{}'""".format(atc_query)
+	AND omop.concept_name ~* '{indication_query}'
+"""
+  if atc_query: sql += f" AND atc.l1_name ~* '{atc_query}'"
   logging.info(sql)
   dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
   dcgenes = dcgenes.astype({'moa': 'boolean'})
-  logging.debug("Targets (pre-multi-split): {}".format(dcgenes['genes'].nunique()))
-  logging.debug("Targets, MoA (pre-multi-split) ({}): {}".format(dcgenes[(dcgenes.moa)]['genes'].nunique(), dcgenes[(dcgenes.moa)]['genes'].str.cat(sep=',')))
+  logging.debug(f"Targets (pre-multi-split): {dcgenes['genes'].nunique()}")
+  logging.debug(f"Targets, MoA (pre-multi-split) ({dcgenes[(dcgenes.moa)]['genes'].nunique()}): {dcgenes[(dcgenes.moa)]['genes'].str.cat(sep=',')}")
 
   if dcgenes.shape[0]>0:
     # Parse and split delimited gene symbols to separate rows:
     b = pd.DataFrame(dcgenes.genes.str.split('|').tolist(), index=dcgenes.index).stack()
     b = pd.DataFrame(b)
     b.columns = ['gene']
-    logging.debug("0-level index: {}".format(b.index.levels[0]))
+    logging.debug(f"0-level index: {b.index.levels[0]}")
     b = b.reset_index(level=1, drop=True)
     dcgenes = dcgenes.drop(columns=["genes"]).join(b, how="left")
   return dcgenes
@@ -145,22 +146,21 @@ def Neo4jConnect(uri, paramfile):
         NeoUser = re.sub(r'^.*NEO4J_USERNAME="?([^"]*)"?$', r'\1', line.rstrip())
       elif re.match('.*NEO4J_PASSWORD=', line):
         NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
-    logging.debug("NeoUser: \"{}\"; NeoPass: \"{}\"".format(NeoUser, NeoPass))
-
+    logging.debug(f"NeoUser: \"{NeoUser}\"; NeoPass: \"{NeoPass}\"")
   neo4jdb = neo4j.GraphDatabase.driver(NEO4J_URI, auth=(NeoUser, NeoPass))
   session = neo4jdb.session()
   return session
 
 ###
 def KGAP_Search(cid_list, score_attribute):
-  cql = """\
+  cql = f"""\
 MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
-WHERE (d.pubchem_cid in {})
-WITH g, {} AS score
+WHERE (d.pubchem_cid in {cid_list})
+WITH g, {score_attribute} AS score
 RETURN g.id, g.name, score
 ORDER BY score DESC
-""".format(cid_list, score_attribute)
-  logging.info("CQL: {}".format(cql))
+"""
+  logging.info(f"CQL: {cql}")
   cdf = cypher2df(cql)
   cdf.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
   return cdf
@@ -172,10 +172,12 @@ if __name__=="__main__":
   NEO4J_URI = "neo4j://hoffmann.data2discovery.net:7695"
   NEO4J_PARAMFILE = os.environ["HOME"]+"/.neo4j.sh"
   #INDICATION_QUERY = "Parkinson"; ATC_QUERY = 'NERVOUS SYSTEM';
+  ALGORITHMS=["dweighted", "zweighted"]
   parser = argparse.ArgumentParser(description='KGAP LINCS-IDG search and ROC analysis')
   parser.add_argument("--indication_query", required=True, help="DrugCentral indication query")
   parser.add_argument("--atc_query", help="DrugCentral ATC L1 query")
   parser.add_argument("--odir", default=".", help="output dir")
+  parser.add_argument("--algorithm", choices=ALGORITHMS, default="zweighted", help="graph analytic path scoring algorithm")
   parser.add_argument("--dc_dbhost", default=DC_DBHOST, help="DrugCentral DBHOST")
   parser.add_argument("--dc_dbport", type=int, default=DC_DBPORT, help="DrugCentral DBPORT")
   parser.add_argument("--dc_dbname", default=DC_DBNAME, help="DrugCentral DBNAME")
@@ -194,15 +196,15 @@ if __name__=="__main__":
   if dcdrugs.shape[0]==0:
     logging.info(f"No drugs found for {args.indication_query}.  Quitting.")
     sys.exit(0)
-  logging.info("Drug PUBCHEM_CIDs (N={}): {}".format(dcdrugs['pubchem_cid'].nunique(), ",".join(list(dcdrugs.pubchem_cid.unique()))))
+  logging.info(f"Drug PUBCHEM_CIDs (N={dcdrugs['pubchem_cid'].nunique()}): {','.join(list(dcdrugs.pubchem_cid.unique()))}")
   dcdrugs.to_csv(f"{args.odir}/dcdrugs.tsv", "\t", index=False)
 
   dcgenes = GetIndication2Genes(args.indication_query, args.atc_query)
   if dcgenes.shape[0]==0:
     logging.info(f"No genes found for {args.indication_query}.  Quitting.")
     sys.exit(0)
-  logging.info("Targets: {}".format(dcgenes['gene'].nunique()))
-  logging.info("Targets, MoA: {}".format(dcgenes[(dcgenes.moa)]['gene'].nunique()))
+  logging.info(f"Targets: {dcgenes['gene'].nunique()}")
+  logging.info(f"Targets, MoA: {dcgenes[(dcgenes.moa)]['gene'].nunique()}")
   dcgenes.to_csv(f"{args.odir}/dcgenes.tsv", "\t", index=False)
   #print(dcgenes.head(12))
 
@@ -212,34 +214,29 @@ if __name__=="__main__":
   cid_list = sorted(list(dcdrugs.pubchem_cid.array.astype('int')))
 
   ###
-  # Degree-weighted:
-  #score_attribute = "sum(s.degree)"
-  #cdf_d = KGAP_Search(cid_list, score_attribute)
-  #cdf_d.head(10)
-  #cdf_d.to_csv(f"{args.odir}/results_dweighted.tsv", "\t", index=False)
-
-  #plt = ROCplotter(cdf_d, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, D-weighted ({args.indication_query})')
-  #plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_Dweighted.png", format="png")
-  
-  #plt = ROCplotter(cdf_d, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes (MoA), D-weighted ({args.indication_query})')
-  #plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_DweightedMoA.png", format="png")
+  if args.algorithm=="dweighted": # D-weighted: Degree-weighted
+    score_attribute = "sum(s.degree)"
+  elif args.algorithm=="zweighted": # Z-weighted: Z-score-and-degree-weighted, Stouffer's method
+    score_attribute = "sum(r.zscore)/sqrt(count(r))"  
+  else:
+    parser.error(f"Invalid algorithm: {args.algorithm}")
+    parser.print_help()
 
   ###
-  # Z-score-(and-degree)-weighted:
-  score_attribute = "sum(r.zscore)/sqrt(count(r))"  # sumz()
-  cdf_z = KGAP_Search(cid_list, score_attribute)
-  cdf_z.head(10)
-  cdf_z.to_csv(f"{args.odir}/results_zweighted.tsv", "\t", index=False)
+  cdf = KGAP_Search(cid_list, score_attribute)
+  cdf.head(10)
+  cdf.to_csv(f"{args.odir}/results_{args.algorithm}.tsv", "\t", index=False)
 
-  ecdf_z = ECDF(cdf_z.kgapScore)
-  plt.plot(ecdf_z.x, ecdf_z.y)
-  plt.title("KGAP-LINCS Z-weighted Score ECDF")
+  ecdf = ECDF(cdf.kgapScore)
+  plt.plot(ecdf.x, ecdf.y)
+  plt.title(f"KGAP-LINCS {args.algorithm} Score ECDF")
   plt.savefig(f"{args.odir}/KGAP-LINCS_ScoreEcdf.png", format="png")
 
-  plt = ROCplotter(cdf_z, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, Z-weighted\n({args.indication_query})')
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_Zweighted_{args.indication_query}.png", format="png")
+  plt = ROCplotter(cdf, dcgenes, gene_tag_r = "geneSymbol",
+gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, {args.algorithm}\n({args.indication_query})')
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.algorithm}_{args.indication_query}.png", format="png")
 
-  plt = ROCplotter(cdf_z, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes (MoA), Z-weighted\n({args.indication_query})')
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_ZweightedMoA_{args.indication_query}.png", format="png")
+  plt = ROCplotter(cdf, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes (MoA), {args.algorithm}\n({args.indication_query})')
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.algorithm}_MoA_{args.indication_query}.png", format="png")
   #plt.show()
 
