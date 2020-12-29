@@ -22,7 +22,7 @@ def cypher2df(cql):
 
 ###
 def ROCplotter(results, valgenes, gene_tag_v = "name", gene_tag_r = "name", score_tag = "score",
-	show_precision=True, show_recall=True, show_accuracy=False, show_mcc=False, title="ROC Plot"):
+	show_precision=False, show_recall=False, show_accuracy=False, show_mcc=False, title="ROC Plot"):
     """From query results and a validation geneset, plot ROC curve with AUC."""
     vga = np.array(results[gene_tag_r].isin(valgenes[gene_tag_v]).astype(np.int8))
     fpr, tpr, thresholds = roc_curve(vga, np.array(results[score_tag]))
@@ -230,10 +230,9 @@ if __name__=="__main__":
   ecdf = ECDF(cdf.kgapScore)
   plt.plot(ecdf.x, ecdf.y)
   plt.title(f"KGAP-LINCS {args.algorithm} Score ECDF")
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ScoreEcdf.png", format="png")
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ScoreEcdf_{args.algorithm}.png", format="png")
 
-  plt = ROCplotter(cdf, dcgenes, gene_tag_r = "geneSymbol",
-gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, {args.algorithm}\n({args.indication_query})')
+  plt = ROCplotter(cdf, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, {args.algorithm}\n({args.indication_query})')
   plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.algorithm}_{args.indication_query}.png", format="png")
 
   plt = ROCplotter(cdf, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes (MoA), {args.algorithm}\n({args.indication_query})')
