@@ -164,10 +164,10 @@ def Neo4jConnect(uri, paramfile):
     while True:
       line = fin.readline()
       if not line: break
-      if re.match('.*NEO4J_USERNAME=', line):
-        NeoUser = re.sub(r'^.*NEO4J_USERNAME="?([^"]*)"?$', r'\1', line.rstrip())
-      elif re.match('.*NEO4J_PASSWORD=', line):
-        NeoPass = re.sub(r'^.*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
+      if re.match('[^#]*NEO4J_USERNAME=', line):
+        NeoUser = re.sub(r'^[^#]*NEO4J_USERNAME="?([^"]*)"?$', r'\1', line.rstrip())
+      elif re.match('[^#]*NEO4J_PASSWORD=', line):
+        NeoPass = re.sub(r'^[^#]*NEO4J_PASSWORD="?([^"]*)"?$', r'\1', line.rstrip())
     logging.debug(f"NeoUser: \"{NeoUser}\"; NeoPass: \"{NeoPass}\"")
   neo4jdb = neo4j.GraphDatabase.driver(NEO4J_URI, auth=(NeoUser, NeoPass))
   session = neo4jdb.session()
@@ -221,8 +221,9 @@ if __name__=="__main__":
   if dcdrugs.shape[0]==0:
     logging.info(f"No drugs found for {args.indication_query}.  Quitting.")
     sys.exit(0)
-  logging.info(f"Drug PUBCHEM_CIDs (N={dcdrugs['pubchem_cid'].nunique()}): {','.join(list(dcdrugs.pubchem_cid.unique()))}")
-  dcdrugs.to_csv(f"{args.odir}/dcdrugs.tsv", "\t", index=False)
+  cid_list = sorted(list(dcdrugs.pubchem_cid.unique().astype('int')))
+  logging.info(f"Drug PUBCHEM_CIDs (N={dcdrugs['pubchem_cid'].nunique()}): {str(cid_list)}")
+  dcdrugs.to_csv(f"{args.odir}/dcdrugs_{args.indication_query}.tsv", "\t", index=False)
 
   dcgenes = GetIndication2Genes(args.indication_query, args.indication_query_type, args.atc_query, args.atc_query_type)
   if dcgenes.shape[0]==0:
@@ -230,13 +231,10 @@ if __name__=="__main__":
     sys.exit(0)
   logging.info(f"Targets: {dcgenes['gene'].nunique()}")
   logging.info(f"Targets, MoA: {dcgenes[(dcgenes.moa)]['gene'].nunique()}")
-  dcgenes.to_csv(f"{args.odir}/dcgenes.tsv", "\t", index=False)
-  #print(dcgenes.head(12))
+  dcgenes.to_csv(f"{args.odir}/dcgenes_{args.indication_query}.tsv", "\t", index=False)
 
   ###
   session = Neo4jConnect(NEO4J_URI, args.neo4j_paramfile)
-
-  cid_list = sorted(list(dcdrugs.pubchem_cid.array.astype('int')))
 
   ###
   if args.algorithm=="dweighted": # D-weighted: Degree-weighted
@@ -249,18 +247,17 @@ if __name__=="__main__":
 
   ###
   cdf = KGAP_Search(cid_list, score_attribute)
-  cdf.head(10)
-  cdf.to_csv(f"{args.odir}/results_{args.algorithm}.tsv", "\t", index=False)
+  cdf.to_csv(f"{args.odir}/results_{args.indication_query}_{args.algorithm}.tsv", "\t", index=False)
 
   ecdf = ECDF(cdf.kgapScore)
   plt.plot(ecdf.x, ecdf.y)
   plt.title(f"KGAP-LINCS {args.algorithm} Score ECDF")
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ScoreEcdf_{args.algorithm}.png", format="png")
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ScoreEcdf_{args.indication_query}_{args.algorithm}.png", format="png")
 
   plt = ROCplotter(cdf, dcgenes, gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes, {args.algorithm}\n({args.indication_query})')
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.algorithm}_{args.indication_query}.png", format="png")
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.indication_query}_{args.algorithm}.png", format="png")
 
   plt = ROCplotter(cdf, dcgenes[(dcgenes.moa)], gene_tag_r = "geneSymbol", gene_tag_v="gene", score_tag = "kgapScore", title=f'KGAP-LINCS ROC vs DrugCentral Genes (MoA), {args.algorithm}\n({args.indication_query})')
-  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.algorithm}_MoA_{args.indication_query}.png", format="png")
+  plt.savefig(f"{args.odir}/KGAP-LINCS_ROC_{args.indication_query}_{args.algorithm}_MoA.png", format="png")
   #plt.show()
 

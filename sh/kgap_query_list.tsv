@@ -8,6 +8,7 @@ Diabetes mellitus type 2	exact	ALIMENTARY TRACT AND METABOLISM	exact	zweighted
 Gout	regex			zweighted
 Human immunodeficiency virus infection	exact			zweighted
 Hypertensive disorder	regex			zweighted
+Multiple sclerosis	regex			zweighted
 Parkinson	regex	NERVOUS SYSTEM	exact	zweighted
 Primary cutaneous T-cell lymphoma	exact			zweighted
 Rheumatoid arthritis	exact			zweighted
