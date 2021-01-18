@@ -61,7 +61,7 @@ def DrugCentralConnect(dbhost ,dbport, dbname, dbusr, dbpw):
   return dbcon
 
 ###
-def GetIndication2Drugs(indication_query, atc_query):
+def GetIndication2Drugs(indication_query, indication_query_type, atc_query, atc_query_type):
   """Query DrugCentral from indication for drugs."""
   sql = f"""\
 SELECT DISTINCT
@@ -86,16 +86,27 @@ LEFT JOIN
 WHERE
 	ids.id_type = 'PUBCHEM_CID'
 	AND omop.relationship_name = 'indication'
-	AND omop.concept_name ~* '{indication_query}'
 """
-  if atc_query: sql += f" AND atc.l1_name ~* '{atc_query}'"
+  if indication_query_type=="exact":
+    sql += f"        AND omop.concept_name ILIKE '{indication_query}'"
+  elif indication_query_type=="substring":
+    sql += f"        AND omop.concept_name ILIKE '%{indication_query}%'"
+  else: #regex
+    sql += f"        AND omop.concept_name ~* '{indication_query}'"
+  if atc_query:
+    if atc_query_type=="exact":
+      sql += f" AND atc.l1_name ILIKE '{atc_query}'"
+    elif atc_query_type=="substring":
+      sql += f" AND atc.l1_name ILIKE '%{atc_query}%'"
+    else: #regex
+      sql += f" AND atc.l1_name ~* '{atc_query}'"
   logging.info(sql)
   dcdrugs = pandas.io.sql.read_sql_query(sql, dbcon)
   logging.debug(f"rows,cols: {dcdrugs.shape[0]},{dcdrugs.shape[1]}")
   return dcdrugs
 
 ###
-def GetIndication2Genes(indication_query, atc_query):
+def GetIndication2Genes(indication_query, indication_query_type, atc_query, atc_query_type):
   """Query DrugCentral from indication for genes."""
   sql = f"""\
 SELECT DISTINCT
@@ -115,9 +126,20 @@ LEFT JOIN
 WHERE
 	atf.gene IS NOT NULL
 	AND omop.relationship_name = 'indication'
-	AND omop.concept_name ~* '{indication_query}'
 """
-  if atc_query: sql += f" AND atc.l1_name ~* '{atc_query}'"
+  if indication_query_type=="exact":
+    sql += f"        AND omop.concept_name ILIKE '{indication_query}'"
+  elif indication_query_type=="substring":
+    sql += f"        AND omop.concept_name ILIKE '%{indication_query}'%"
+  else: #regex
+    sql += f"        AND omop.concept_name ~* '{indication_query}'"
+  if atc_query:
+    if atc_query_type=="exact":
+      sql += f" AND atc.l1_name ILIKE '{atc_query}'"
+    elif atc_query_type=="substring":
+      sql += f" AND atc.l1_name ILIKE '%{atc_query}%'"
+    else: #regex
+      sql += f" AND atc.l1_name ~* '{atc_query}'"
   logging.info(sql)
   dcgenes = pandas.io.sql.read_sql_query(sql, dbcon)
   dcgenes = dcgenes.astype({'moa': 'boolean'})
@@ -173,9 +195,12 @@ if __name__=="__main__":
   NEO4J_PARAMFILE = os.environ["HOME"]+"/.neo4j.sh"
   #INDICATION_QUERY = "Parkinson"; ATC_QUERY = 'NERVOUS SYSTEM';
   ALGORITHMS=["dweighted", "zweighted"]
+  QUERY_TYPES=["exact", "substring", "regex"]
   parser = argparse.ArgumentParser(description='KGAP LINCS-IDG search and ROC analysis')
   parser.add_argument("--indication_query", required=True, help="DrugCentral indication query")
+  parser.add_argument("--indication_query_type", choices=QUERY_TYPES, default="regex")
   parser.add_argument("--atc_query", help="DrugCentral ATC L1 query")
+  parser.add_argument("--atc_query_type", choices=QUERY_TYPES, default="regex")
   parser.add_argument("--odir", default=".", help="output dir")
   parser.add_argument("--algorithm", choices=ALGORITHMS, default="zweighted", help="graph analytic path scoring algorithm")
   parser.add_argument("--dc_dbhost", default=DC_DBHOST, help="DrugCentral DBHOST")
@@ -192,14 +217,14 @@ if __name__=="__main__":
 
   dbcon = DrugCentralConnect(args.dc_dbhost, args.dc_dbport, args.dc_dbname, args.dc_dbusr, args.dc_dbpw)
 
-  dcdrugs = GetIndication2Drugs(args.indication_query, args.atc_query)
+  dcdrugs = GetIndication2Drugs(args.indication_query, args.indication_query_type, args.atc_query, args.atc_query_type)
   if dcdrugs.shape[0]==0:
     logging.info(f"No drugs found for {args.indication_query}.  Quitting.")
     sys.exit(0)
   logging.info(f"Drug PUBCHEM_CIDs (N={dcdrugs['pubchem_cid'].nunique()}): {','.join(list(dcdrugs.pubchem_cid.unique()))}")
   dcdrugs.to_csv(f"{args.odir}/dcdrugs.tsv", "\t", index=False)
 
-  dcgenes = GetIndication2Genes(args.indication_query, args.atc_query)
+  dcgenes = GetIndication2Genes(args.indication_query, args.indication_query_type, args.atc_query, args.atc_query_type)
   if dcgenes.shape[0]==0:
     logging.info(f"No genes found for {args.indication_query}.  Quitting.")
     sys.exit(0)

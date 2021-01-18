@@ -1,14 +1,14 @@
-omop_query	search_logic	atc_l1_class	algorithm
-Acne vulgaris	substring		zweighted
-Alzheimer	substring		zweighted
-Asthma	substring		zweighted
-Crohn	substring	ALIMENTARY TRACT AND METABOLISM	zweighted
-Depressive disorder	substring	NERVOUS SYSTEM	zweighted
-Diabetes mellitus type 2	substring	ALIMENTARY TRACT AND METABOLISM	zweighted
-Gout	substring		zweighted
-Human immunodeficiency virus infection	substring		zweighted
-Hypertensive disorder	substring		zweighted
-Parkinson	substring	NERVOUS SYSTEM	zweighted
-Primary cutaneous T-cell lymphoma	substring		zweighted
-Rheumatoid arthritis	substring		zweighted
-Schizophrenia	substring		zweighted
+indication_query	indication_query_type	atc_query	atc_query_type	algorithm
+Acne vulgaris	regex			zweighted
+Alzheimer	regex			zweighted
+Asthma	regex			zweighted
+Crohn	regex	ALIMENTARY TRACT AND METABOLISM	exact	zweighted
+Depressive disorder	regex	NERVOUS SYSTEM	exact	zweighted
+Diabetes mellitus type 2	exact	ALIMENTARY TRACT AND METABOLISM	exact	zweighted
+Gout	regex			zweighted
+Human immunodeficiency virus infection	exact			zweighted
+Hypertensive disorder	regex			zweighted
+Parkinson	regex	NERVOUS SYSTEM	exact	zweighted
+Primary cutaneous T-cell lymphoma	exact			zweighted
+Rheumatoid arthritis	exact			zweighted
+Schizophrenia	regex			zweighted

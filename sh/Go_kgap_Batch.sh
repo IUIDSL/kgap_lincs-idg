@@ -39,7 +39,8 @@ while [ $I -lt $N ]; do
 	if [ "${AQ_TYPE}" ]; then
 		cmd="${cmd} --atc_query_type \"${AQ_TYPE}\""
 	fi
-	${cmd}
+	echo "${cmd}"
+	eval "${cmd}"
 done
 #
 ##
