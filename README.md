@@ -32,7 +32,7 @@ To restore this graph database from a dump file download this [dump file](https:
 install the Neo4j Desktop Client [Neo4j](https://neo4j.com/) and launch it. Create a new 4.2 database (do not start the database).  Click on the *...* and then click *Manage* in the pop up menu, and then click on *Open Terminal*. Restore the database from the dump file with the command, changing `PATHTOFILE` as needed.
 
 ```
-neo4j-admin load --from=PATHTOFILE/dclneodb.dump --database=neo4j
+bin/neo4j-admin load --from=PATHTOFILE/dclneodb.dump --database=neo4j
 ```
 
 Next exit the terminal and click *Start* to start the database. Click *Open* to use built in Neo4j browser to query and explore the database.
