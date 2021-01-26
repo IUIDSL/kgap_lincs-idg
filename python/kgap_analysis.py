@@ -130,7 +130,7 @@ WHERE
   if indication_query_type=="exact":
     sql += f"        AND omop.concept_name ILIKE '{indication_query}'"
   elif indication_query_type=="substring":
-    sql += f"        AND omop.concept_name ILIKE '%{indication_query}'%"
+    sql += f"        AND omop.concept_name ILIKE '%{indication_query}%'"
   else: #regex
     sql += f"        AND omop.concept_name ~* '{indication_query}'"
   if atc_query:
@@ -179,12 +179,12 @@ def KGAP_Search(cid_list, score_attribute):
 MATCH p=(d:Drug)-[]-(s:Signature)-[r]-(g:Gene), p1=(s)-[]-(c:Cell)
 WHERE (d.pubchem_cid in {cid_list})
 WITH g, {score_attribute} AS score
-RETURN g.id, g.name, score
+RETURN g.id, g.name, g.tdl, score
 ORDER BY score DESC
 """
   logging.info(f"CQL: {cql}")
   cdf = cypher2df(cql)
-  cdf.columns = ["ncbiGeneId", "geneSymbol", "kgapScore"]
+  cdf.columns = ["ncbiGeneId", "geneSymbol", "TDL", "kgapScore"]
   return cdf
 
 ###
@@ -221,6 +221,8 @@ if __name__=="__main__":
   if dcdrugs.shape[0]==0:
     logging.info(f"No drugs found for {args.indication_query}.  Quitting.")
     sys.exit(0)
+  ind_list = sorted(list(dcdrugs.omop_concept_name.unique()))
+  logging.info(f"Drug indications (N={dcdrugs['omop_concept_name'].nunique()}): {str(ind_list)}")
   cid_list = sorted(list(dcdrugs.pubchem_cid.unique().astype('int')))
   logging.info(f"Drug PUBCHEM_CIDs (N={dcdrugs['pubchem_cid'].nunique()}): {str(cid_list)}")
   dcdrugs.to_csv(f"{args.odir}/dcdrugs_{args.indication_query}.tsv", "\t", index=False)
