@@ -10,7 +10,8 @@ See also:
 
 * [KGAP Project Homepage](https://cheminfov.informatics.indiana.edu/projects/kgap/)
 
-_Publication  (in preparation)_: "Knowledge graph analytic platform with LINCS and IDG for Parkinson's disease target illumination", by Jeremy Yang, Christopher Gessner, Joel Duerksen, Daniel Biber, Jessica Binder, Brian Foote, Robin McEntire, Kyle Stirling, Ying Ding and David Wild.
+_Publication  (in review)_: "Knowledge graph analytic platform with LINCS and IDG for Parkinson's disease target illumination", by Jeremy Yang, Christopher Gessner, Joel Duerksen, Daniel Biber, Jessica Binder, Brian Foote, Robin McEntire, Kyle Stirling, Ying Ding and David Wild
+[BioRxiv preprint](https://www.biorxiv.org/content/10.1101/2020.12.30.424881v2).
 
 ## Graph database instructions
 
