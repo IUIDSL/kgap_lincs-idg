@@ -11,7 +11,11 @@ See also:
 * [KGAP Project Homepage](https://cheminfov.informatics.indiana.edu/projects/kgap/)
 * [LIDIA](https://github.com/IUIDSL/kgap_lidia) (LINCS-IDG Drug-target Illumination Application)
 
-_Publication  (in review; [preprint](https://www.biorxiv.org/content/10.1101/2020.12.30.424881v3))_: "Knowledge graph analytic platform with LINCS and IDG for Parkinson's disease target illumination", by Jeremy Yang, Christopher Gessner, Joel Duerksen, Daniel Biber, Jessica Binder, Brian Foote, Robin McEntire, Kyle Stirling, Ying Ding and David Wild.
+__Publication  [LINK](https://rdcu.be/cKblK)__: "Knowledge graph analytics
+platform with LINCS and IDG for Parkinson's disease target illumination", by
+Jeremy Yang, Christopher Gessner, Joel Duerksen, Daniel Biber, Jessica Binder,
+Brian Foote, Robin McEntire, Kyle Stirling, Ying Ding and David Wild, BMC
+Bioinformatics, 2022.
 
 ## Graph database instructions
 
