@@ -8,8 +8,8 @@ with the IDSL __PRIDE__ initiative (Parkinson's Research through Integrative Dat
 
 See also:
 
-* [KGAP Project Homepage](https://cheminfov.informatics.indiana.edu/projects/kgap/)
-* [LIDIA](https://github.com/IUIDSL/kgap_lidia) (LINCS-IDG Drug-target Illumination Application)
+* [KGAP Project Homepage](https://cheminfov.informatics.indiana.edu/projects/kgap/) (includes db dumpfile)
+* [KGAP LIDIA](https://github.com/IUIDSL/kgap_lidia) (LINCS-IDG Drug-target Illumination Application)
 
 __Publication  [LINK](https://rdcu.be/cKblK)__: "Knowledge graph analytics
 platform with LINCS and IDG for Parkinson's disease target illumination", by
