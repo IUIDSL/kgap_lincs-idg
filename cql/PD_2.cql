@@ -3,6 +3,6 @@ MATCH p=((c:Concept)
         -[ds:DRUG_SIGNATURE]-(s:Signature)
         -[sg:SIGNATURE_GENE]-(g:Gene))
 WHERE c.name =~ ".*Parkinson.*"
-RETURN p
-LIMIT 30
+RETURN DISTINCT d.name, d.pubchem_cid, d.pert_id, d.canonical_smiles
+LIMIT 200
 	;
